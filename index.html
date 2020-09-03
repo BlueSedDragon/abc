@@ -1,0 +1,144 @@
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+    <title>ABColor</title>
+    <meta charset='utf-8' />
+    <script type='text/javascript' src='./aes.js'></script>
+    <script type='text/javascript' src='./hash.js'></script>
+    <script type='text/javascript' src='./main.js'></script>
+</head>
+
+<body>
+    <div style='text-align:center;'>
+        <h1>ABColor (Version 1.0)</h1>
+
+        <span>
+            License:
+            <a href='./LICENSE.txt'>
+                GNU GPL Version 3.0</a> or any later version.<br />
+        </span>
+
+        <hr />
+    </div>
+
+    <noscript>
+        <span style='color:red;'>注意：JavaScript 无法运行，此页面的功能无法使用。</span><br />
+        您可以试试：
+        <ul>
+            <li>开启浏览器的 JavaScript 功能。</li>
+            <li>升级浏览器版本。</li>
+        </ul>
+        <hr /><br />
+    </noscript>
+    <div id='test'>
+        <span style='color:red;'>注意：您的浏览器不支持某些 JavaScript 特性，此页面的功能无法使用。</span><br />
+        以下是本程序所需要的 JavaScript 特性：
+        <ul>
+            <li>var</li>
+            <li>let</li>
+            <li>for-count</li>
+            <li>for-in</li>
+            <li>for-of</li>
+            <li>Uint8Array()</li>
+            <li>encodeURI()</li>
+        </ul>
+        <hr /><br />
+    </div>
+
+    <div id='gen-table'>
+        <h2>第一步：生成字符集</h2>
+
+
+        得到字符集的方法：随便从哪个网站上找一大段文字复制即可（建议直接复制 HTML 源代码），程序会自动提取文字中不重复的 CJK 字符（不包含标点符号）来作为字符集。<br />
+        字符集的作用：它可以用来建立一个映射，该映射可用来表示任意的二进制数据（0x00 ~ 0xFF）。<br />
+        字符集的位置：在 "当前的字符集" 下方，以 "[" 开始，以 "]" 结束。<br />
+        保存字符集的方法：可将字符集保存到本地文件，然后在每次使用时粘贴到下方的框中。<br />
+        <span style='color:red;'>注意：请使用 "随机排序" 功能打乱顺序以防止您的字符集与他人相同或相似。</span><br />
+        <br />
+
+        输入或粘贴一段文字以生成字符集：<br />
+        （内置字符集：
+        <a href='javascript:(void char_builtin(6));'>方位</a> |
+        <a href='javascript:(void char_builtin(2));'>名词</a> |
+        <a href='javascript:(void char_builtin(3));'>生肖</a> |
+        <a href='javascript:(void char_builtin(1));'>顺序</a> |
+        <a href='javascript:(void char_builtin(4));'>量词</a> |
+        <a href='javascript:(void char_builtin(5));'>虚词</a> |
+        <a href='javascript:(void char_builtin(0));'>文言文</a>
+        ）<br />
+        <textarea id='gen-table-body' style='width:100%;height:200px;'></textarea><br />
+        <input type='button' value='生成' onclick='table_get();' /><br /><br />
+
+        <div id='gen-table-display'>
+            当前的字符集（<a href='javascript:(void table_random());'>随机排序</a>）：<br />
+            [<span id='gen-table-display-body'>N/A</span>]<br /><br />
+
+            字符集个数：<span id='gen-table-display-count'>N/A</span>个。<br />
+            <span id='gen-table-display-info'></span>
+        </div>
+    </div>
+    <hr />
+    <div id='code'>
+        <h2>第二步：编码/解码</h2>
+        Q: 编码方式是什么？<br />
+        A: 编码方式是一种排序方式。<br />
+        <ul>
+            <li>Base16 是用十六个字符来分别表示 0x0 ~ 0xF，然后用两个字符来表示一个字节。</li>
+            <li>Base256 则是用 256 个字符来分别表示 0x00 ~ 0xFF，这样就只需要用一个字符来表示一个字节。</li>
+        </ul>
+        所以，假设有一种编码方式为 Base<i>N</i>，则字符集的数量必须大于或等于 <i>N</i>。<br /><br />
+
+        编码方式：<select id='code-mode' onchange='base_get(1);'>
+            <option value='16'>Base16</option>
+            <option value='256'>Base256</option>
+        </select><br />
+
+        <br />
+
+        加密方式：<select id='crypt-mode' onchange='(function(){
+            // to hidden password input box if no encryption.
+            var object = document.getElementById("crypt-password");
+            if(get_mode().crypt !== "none") object.style.display = "inline";
+            else object.style.display = "none";
+        })();'>
+            <option value='aes-256-ctr'>有加密（AES-256-CTR）</option>
+            <option value='none'>无加密</option>
+        </select><br />
+
+        <span id='crypt-password'>加密密码：<input id='crypt-password-input' type='password' /><br /></span>
+        <br />
+
+        输入：
+        <textarea id='io-input' style='width:100%;height:35vh;'></textarea>
+        <input type='button' value='编码' onclick='main(0);' />
+        <input type='button' value='解码' onclick='main(1);' />
+        <br /><br />
+
+        输出：
+        <textarea id='io-output' style='width:100%;height:35vh;' readonly='readonly'></textarea>
+        <br />
+    </div>
+    <hr />
+    <div id='sub'>
+        <h2>附录</h2>
+        (本区域供调试使用 | This area is used for DEBUG.)<br /><br />
+        Blacklist Check (format: JSON): <br />
+        <textarea id='sub-test-1' style='width:100%;height:100px;'></textarea><br />
+        <input type='button' value='Submit' onclick='(function(){
+            var json = document.getElementById("sub-test-1").value;
+            var data = JSON.parse(json);
+            alert(JSON.stringify(char_test(data)));
+        })();' />
+        <hr />
+
+        <a href='javascript:undefined;' onclick='(function(){
+            var t;
+            t = Date.now();window.sha256("");t = (Date.now() - t) / 1000;alert(`sha256(): ${t} second`);
+            t = Date.now();window.sha256_cached(""); t = (Date.now() - t) / 1000;alert(`sha256_cached(): ${t} second`);
+        })();'>Test Hash Time</a>
+    </div>
+</body>
+
+</html>
