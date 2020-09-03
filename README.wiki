@@ -5,7 +5,7 @@
 
 === Local using ===
 # Please [[#Download|download all files]] first.
-# Decompression to a local directory.
+# And decompression to a local directory.
 # please open file "index.html" with your browser.
 #* it is a local HTML web page file.
 #* online connection is not required.
