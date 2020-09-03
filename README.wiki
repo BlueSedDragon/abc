@@ -2,10 +2,16 @@
 * https://github.com/BlueSedDragon/abc/archive/master.zip
 
 == Usage ==
-please open file "index.html" with your browser.
-* it is a local HTML web page file.
-* online connection is not required.
 
-=== for example ===
+=== Local using ===
+# Please [#Download|download all files] first.
+# Decompression to a local directory.
+# please open file "index.html" with your browser.
+#* it is a local HTML web page file.
+#* online connection is not required.
+==== for example ====
 <code>$ firefox ./index.html</code>
+
+=== Online using ===
+* https://blueseddragon.github.io/abc/
 
