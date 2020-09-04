@@ -81,7 +81,7 @@ function char_random() {
         result = integer_random(0x4e00, 0x9fa5);
 
         result = result.toString(16);
-        if ((char.length % 2) !== 0) result = '0' + result;
+        if ((result.length % 2) !== 0) result = '0' + result;
 
         result = `"\\u${result}"`;
         result = JSON.parse(result);
