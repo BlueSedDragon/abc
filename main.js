@@ -119,7 +119,7 @@ function char_builtin(seq) {
 
             case -2: {
                 let tmp = (new Set());
-                let count = 1000;
+                let count = 1024;
 
                 while (tmp.size < count) {
                     let it = char_random();
