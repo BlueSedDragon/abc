@@ -64,10 +64,26 @@ function char_builtin(seq) {
         4: '颗盒朵件位杯棵架台部辆只根条匹群',
         5: '于从在被把给让和与或的得地拿以比',
         6: '东南西北上下左右先前后今明昨大小',
+        7: '蓝红赤绿灰白黑黄橙紫棕褐青粉金银',
     };
 
     base_auto = true;
-    document.getElementById('gen-table-body').value = chars[seq];
+
+    var data = null;
+    if (seq === -1) {
+        let tmp = [];
+        for (let i of Object.keys(chars)) {
+            let it = chars[i];
+            tmp.push(it);
+        }
+        tmp = tmp.join('');
+
+        data = tmp;
+    } else {
+        data = chars[seq];
+    }
+
+    document.getElementById('gen-table-body').value = data;
     table_get();
 }
 
