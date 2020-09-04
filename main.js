@@ -1,3 +1,9 @@
+/*
+    Encoding: UTF-8
+    URL: https://github.com/BlueSedDragon/abc
+    License: GPLv3 or later
+*/
+
 Array.prototype.random = function () {
     return this[Math.floor(Math.random() * this.length)];
 }
@@ -133,13 +139,13 @@ function char2table(char) {
 }
 
 function hex2buf(hex) {
-    if ((typeof hex) !== 'string') return null;
-    if ((hex.length % 2) !== 0) return null;
+    if ((typeof hex) !== 'string') throw (new Error('bad $hex type.'));
+    if ((hex.length % 2) !== 0) throw (new Error('bad $hex length.'));
 
     hex = hex.toLowerCase();
     var list = '0123456789abcdef';
     for (let i of hex) {
-        if (list.indexOf(i) === -1) return null;
+        if (list.indexOf(i) === -1) throw (new Error('invalid char in $hex.'));
     }
 
     var buf = [];
@@ -151,7 +157,7 @@ function hex2buf(hex) {
     return buf;
 }
 function buf2hex(buf) {
-    if (buf.constructor !== Uint8Array) return null;
+    if (buf.constructor !== Uint8Array) throw (new Error('bad $buf type.'));
 
     var hex = [];
     for (let i of buf) {
@@ -164,7 +170,7 @@ function buf2hex(buf) {
 }
 
 function str2buf(str) {
-    if ((typeof str) !== 'string') return null;
+    if ((typeof str) !== 'string') throw (new Error('bad $str type.'));
 
     var buf = [];
     for (let i = 0, l = str.length; i < l; ++i) {
@@ -186,7 +192,7 @@ function str2buf(str) {
     return buf;
 }
 function buf2str(buf) {
-    if (buf.constructor !== Uint8Array) return null;
+    if (buf.constructor !== Uint8Array) throw (new Error('bad $buf type.'));
 
     var str = [];
     for (let i of buf) {
@@ -230,7 +236,7 @@ function thuum_base16_decode(raw_input) {
     }
     input = input.join('');
 
-    if ((input.length % 2) !== 0) return null;
+    if ((input.length % 2) !== 0) throw (new Error('bad $input length.'));
 
     var table_reverse = {};
     for (let i = 0; i < 16; ++i) {
@@ -313,8 +319,7 @@ function thuum_encode(input) {
             output = thuum_base256_encode(input);
             break;
         default:
-            alert('Error(BUG): base invalid.');
-            return;
+            throw (new Error('bad $base.'));
     }
     return output;
 }
@@ -328,8 +333,7 @@ function thuum_decode(input) {
             output = thuum_base256_decode(input);
             break;
         default:
-            alert('Error(BUG): base invalid.');
-            return;
+            throw (new Error('bad $base.'));
     }
     return output;
 }
@@ -337,7 +341,7 @@ function thuum_decode(input) {
 function sha256(input) {
     if ((typeof input) !== 'string') {
         if (input.constructor === Uint8Array) input = buf2str(input);
-        else return null;
+        else throw (new Error('bad $input type.'));
     }
 
     var hex = (new Hashes.SHA256()).hex(input);
@@ -381,8 +385,8 @@ function aes256ctr_encrypt(input, password, iv) {
     if (input.constructor !== Uint8Array) input = str2buf(input);
     if ((typeof password) !== 'string') password = buf2str(password);
 
-    if (iv.constructor !== Uint8Array) return null;
-    if (iv.length !== 16) return null;
+    if (iv.constructor !== Uint8Array) throw (new Error('bad $iv type.'));
+    if (iv.length !== 16) throw (new Error('bad $iv length.'));
     iv = (new Uint8Array(iv));
     iv[0] = 0;
 
@@ -397,8 +401,8 @@ function aes256ctr_decrypt(input, password, iv) {
     if (input.constructor !== Uint8Array) input = str2buf(input);
     if ((typeof password) !== 'string') password = buf2str(password);
 
-    if (iv.constructor !== Uint8Array) return null;
-    if (iv.length !== 16) return null;
+    if (iv.constructor !== Uint8Array) throw (new Error('bad $iv type.'));
+    if (iv.length !== 16) throw (new Error('bad $iv length.'));
     iv[0] = 0;
 
     var key = sha256_cached(password);
@@ -409,7 +413,7 @@ function aes256ctr_decrypt(input, password, iv) {
 }
 
 function mix_sentence(input) {
-    if ((typeof input) !== 'string') return null;
+    if ((typeof input) !== 'string') throw (new Error('bad $input type.'));
 
     var half = '，';
     var dot = '。';
@@ -449,11 +453,11 @@ function mix_poesy(input, fill) {
     var half = '，';
     var dot = '。';
 
-    if ((typeof input) !== 'string') return null;
+    if ((typeof input) !== 'string') throw (new Error('bad $input type.'));
 
-    if (!Array.isArray(fill)) return null;
+    if (!Array.isArray(fill)) throw (new Error('bad $fill type.'));
     fill = [...(new Set(fill))];
-    if (fill.length < jump) return null;
+    if (fill.length < jump) throw (new Error('bad $fill length.'));
 
     var output = [];
     while (input.length > 0) {
@@ -551,7 +555,7 @@ function main(type) {
             output = buf2str(output);
             break;
         default:
-            return null;
+            throw (new Error('bad $type.'));
     }
     set_output(output);
 }
@@ -630,3 +634,4 @@ function start() {
     display_update();
 }
 setTimeout(start, 0);
+
