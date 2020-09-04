@@ -55,6 +55,39 @@ function char_test(blacklist) { // 用于进行屏蔽词测试。输入屏蔽词
     }
     return hint;
 }
+
+// rust range: min..=max
+function integer_random(min, max) {
+    if (!Number.isSafeInteger(min)) throw (new Error('bad $min type.'));
+    if (!Number.isSafeInteger(max)) throw (new Error('bad $max type.'));
+
+    if (min === max) return min;
+    if (min > max) throw (new Error('bad range!'));
+
+    var result = null;
+
+    var _max = max + 1;
+    do {
+        result = Math.floor(Math.random() * _max);
+    } while (result < min || result > max);
+
+    return result;
+}
+
+function char_random() {
+    var result = null;
+
+    do {
+        result = integer_random(0x4e00, 0x9fa5);
+
+        result = result.toString(16);
+        if ((char.length % 2) !== 0) result = '0' + result;
+
+        result = `"\\u${result}"`;
+        result = JSON.parse(result);
+    } while (result.length !== 1);
+    return result;
+}
 function char_builtin(seq) {
     var chars = {
         0: '之乎者也何乃若及哉亦以而其爲則矣',
@@ -70,17 +103,41 @@ function char_builtin(seq) {
     base_auto = true;
 
     var data = null;
-    if (seq === -1) {
-        let tmp = [];
-        for (let i of Object.keys(chars)) {
-            let it = chars[i];
-            tmp.push(it);
-        }
-        tmp = tmp.join('');
+    if (seq < 0) {
+        switch (seq) {
+            case -1: {
+                let tmp = [];
+                for (let i of Object.keys(chars)) {
+                    let it = chars[i];
+                    tmp.push(it);
+                }
+                tmp = tmp.join('');
 
-        data = tmp;
+                data = tmp;
+                break;
+            }
+
+            case -2: {
+                let tmp = (new Set());
+                let count = 1000;
+
+                while (tmp.size < count) {
+                    let it = char_random();
+                    tmp.add(it);
+                }
+                tmp = [...tmp];
+                tmp = tmp.join('');
+
+                data = tmp;
+                break;
+            }
+
+            default:
+                throw (new Error('bad $seq.'));
+        }
     } else {
         data = chars[seq];
+        if (!data) throw (new Error('$seq is not found.'));
     }
 
     document.getElementById('gen-table-body').value = data;
