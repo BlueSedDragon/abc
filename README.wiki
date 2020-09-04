@@ -14,5 +14,5 @@
 <code>$ firefox ./index.html</code>
 
 === Online using ===
-* https://blueseddragon.github.io/abc/
+* Stable: https://blueseddragon.github.io/abc/
 
