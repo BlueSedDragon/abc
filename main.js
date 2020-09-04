@@ -1,3 +1,9 @@
+/*
+    Encoding: UTF-8
+    URL: https://github.com/BlueSedDragon/abc
+    License: GPLv3 or later
+*/
+
 Array.prototype.random = function () {
     return this[Math.floor(Math.random() * this.length)];
 }
