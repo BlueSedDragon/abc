@@ -15,8 +15,15 @@ pull:
 	make update
 
 push:
-	make update
+	make pull
 	
 	git checkout dev
 	git push origin dev
+	
+	git checkout master
+	git push origin master
+	git push origin --tags
+	
+	make update
+
 
