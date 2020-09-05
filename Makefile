@@ -33,5 +33,5 @@ publish:
 	make update
 
 run:
-	python3 -c 'import webbrowser;webbrowser.open("./index.html")'
+	python3 -c 'import webbrowser;raise SystemExit(0 if webbrowser.open("./index.html") else 1)'
 
