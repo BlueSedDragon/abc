@@ -32,4 +32,6 @@ publish:
 	
 	make update
 
+run:
+	python3 -c 'import webbrowser;webbrowser.open("./index.html")'
 
