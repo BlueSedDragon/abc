@@ -21,6 +21,9 @@ push:
 	git checkout dev
 	git push origin dev
 	
+	make update
+
+publish:
 	git checkout master
 	git push origin master
 	git push origin --tags
