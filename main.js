@@ -88,7 +88,8 @@ function char_random() {
     } while (result.length !== 1);
     return result;
 }
-function char_builtin(seq) {
+
+var char_builtin = (function () {
     var chars = {
         0: '之乎者也何乃若及哉亦以而其爲則矣',
         1: '子丑寅卯辰巳午未申酉戌亥东南西北',
@@ -100,49 +101,51 @@ function char_builtin(seq) {
         7: '蓝红赤绿灰白黑黄橙橘紫棕褐青粉彩',
     };
 
-    base_auto = true;
+    return (function (seq) {
+        base_auto = true;
 
-    var data = null;
-    if (seq < 0) {
-        switch (seq) {
-            case -1: {
-                let tmp = [];
-                for (let i of Object.keys(chars)) {
-                    let it = chars[i];
-                    tmp.push(it);
+        var data = null;
+        if (seq < 0) {
+            switch (seq) {
+                case -1: { // all
+                    let tmp = [];
+                    for (let i of Object.keys(chars)) {
+                        let it = chars[i];
+                        tmp.push(it);
+                    }
+                    tmp = tmp.join('');
+
+                    data = tmp;
+                    break;
                 }
-                tmp = tmp.join('');
 
-                data = tmp;
-                break;
-            }
+                case -2: { // random
+                    let tmp = (new Set());
+                    let count = 1024;
 
-            case -2: {
-                let tmp = (new Set());
-                let count = 1024;
+                    while (tmp.size < count) {
+                        let it = char_random();
+                        tmp.add(it);
+                    }
+                    tmp = [...tmp];
+                    tmp = tmp.join('');
 
-                while (tmp.size < count) {
-                    let it = char_random();
-                    tmp.add(it);
+                    data = tmp;
+                    break;
                 }
-                tmp = [...tmp];
-                tmp = tmp.join('');
 
-                data = tmp;
-                break;
+                default:
+                    throw (new Error('bad $seq.'));
             }
-
-            default:
-                throw (new Error('bad $seq.'));
+        } else { // select
+            data = chars[seq];
+            if (!data) throw (new Error('$seq is not found.'));
         }
-    } else {
-        data = chars[seq];
-        if (!data) throw (new Error('$seq is not found.'));
-    }
 
-    document.getElementById('gen-table-body').value = data;
-    table_get();
-}
+        document.getElementById('gen-table-body').value = data;
+        table_get();
+    });
+})();
 
 var table = [];
 function table_get() {
@@ -180,24 +183,26 @@ function display_update() {
     else info.innerHTML = '';
 }
 
-function str2char(data) {
+var str2char = (function () {
     var band = (new Set([
         '', '：', '‘', '’', '，', '。', '、', '！', '“', '”',
         '？', '（', '）', '《', '》', '－', '「', '」', '；'
     ]));
 
-    var char = (new Set());
-    for (let seq in data) {
-        let num = data.charCodeAt(seq);
-        if (num <= 0xff) continue; // in the ASCII Range
-        if (num < 0x4e00 || num > 0x9fa5) continue; // not in the CJK Range
+    return (function (data) {
+        var char = (new Set());
+        for (let seq in data) {
+            let num = data.charCodeAt(seq);
+            if (num <= 0xff) continue; // in the ASCII Range
+            if (num < 0x4e00 || num > 0x9fa5) continue; // not in the CJK Range
 
-        let str = data[seq];
-        if ((!str) || band.has(str)) continue;
-        char.add(str);
-    }
-    return [...char];
-}
+            let str = data[seq];
+            if ((!str) || band.has(str)) continue;
+            char.add(str);
+        }
+        return [...char];
+    });
+})();
 function char2table(char) {
     var once_char = [...char];
     var new_table = [];
@@ -211,24 +216,27 @@ function char2table(char) {
     return new_table;
 }
 
-function hex2buf(hex) {
-    if ((typeof hex) !== 'string') throw (new Error('bad $hex type.'));
-    if ((hex.length % 2) !== 0) throw (new Error('bad $hex length.'));
-
-    hex = hex.toLowerCase();
+var hex2buf = (function () {
     var list = '0123456789abcdef';
-    for (let i of hex) {
-        if (list.indexOf(i) === -1) throw (new Error('invalid char in $hex.'));
-    }
+    return (function (hex) {
+        if ((typeof hex) !== 'string') throw (new Error('bad $hex type.'));
+        if ((hex.length % 2) !== 0) throw (new Error('bad $hex length.'));
 
-    var buf = [];
-    while (hex.length > 0) {
-        buf.push(parseInt(hex.slice(0, 2), 16));
-        hex = hex.slice(2);
-    }
-    buf = (new Uint8Array(buf));
-    return buf;
-}
+        hex = hex.toLowerCase();
+        for (let i of hex) {
+            if (list.indexOf(i) === -1) throw (new Error('invalid char in $hex.'));
+        }
+
+        var buf = [];
+        while (hex.length > 0) {
+            buf.push(parseInt(hex.slice(0, 2), 16));
+            hex = hex.slice(2);
+        }
+        buf = (new Uint8Array(buf));
+        return buf;
+    });
+})();
+
 function buf2hex(buf) {
     if (buf.constructor !== Uint8Array) throw (new Error('bad $buf type.'));
 
