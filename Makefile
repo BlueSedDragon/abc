@@ -1,6 +1,7 @@
 update:
 	git add -A
 	git status
+	git checkout dev
 
 pull:
 	make update
