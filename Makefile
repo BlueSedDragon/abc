@@ -1,3 +1,6 @@
+all:
+	false
+
 update:
 	git add -A
 	git status
