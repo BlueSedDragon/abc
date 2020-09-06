@@ -4,6 +4,7 @@ import os
 import webbrowser
 
 url = f'file://{os.path.abspath(".")}/index.html'
+url = url.replace('\\', '/')
 
 ok = webbrowser.open(url)
 if ok:
