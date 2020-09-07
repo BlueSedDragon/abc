@@ -176,6 +176,21 @@
             t = Date.now();window.sha256("");t = (Date.now() - t) / 1000;alert(`sha256(): ${t} second`);
             t = Date.now();window.sha256_cached(""); t = (Date.now() - t) / 1000;alert(`sha256_cached(): ${t} second`);
         })();'>Test Hash Time</a>
+
+        <br />
+
+        <a href='javascript:undefined;' onclick='(function(){
+            var c = 0;
+            for(let a of char){
+                let t = [];
+                for(let b of char){
+                    c += 1;
+                    t.push(`${a}${b} (${c})\n`);
+                }
+                t = t.join("");
+                alert(t);
+            }
+        })();'>All Possible</a>
     </div>
 </body>
 
