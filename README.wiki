@@ -1,5 +1,5 @@
 == Download ==
-* Stable: https://github.com/BlueSedDragon/abc/archive/master.zip
+* Stable (recommended): https://github.com/BlueSedDragon/abc/archive/master.zip
 * Unstable: https://github.com/BlueSedDragon/abc/archive/dev.zip
 
 == Usage ==
