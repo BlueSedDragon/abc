@@ -410,7 +410,6 @@ var sha256_cached = (function () {
 
         output = sha256(input);
         cache[input] = output;
-
         return output;
     });
 })();
@@ -625,7 +624,7 @@ function test() {
     // while
     while (0) { }
 
-    // do
+    // do-while
     do { } while (0);
 
     // switch
