@@ -106,33 +106,6 @@ var char_builtin = (function () {
         var data = null;
         if (seq < 0) {
             switch (seq) {
-                case -1: { // all
-                    let tmp = [];
-                    for (let i of Object.keys(chars)) {
-                        let it = chars[i];
-                        tmp.push(it);
-                    }
-                    tmp = tmp.join('');
-
-                    data = tmp;
-                    break;
-                }
-
-                case -2: { // random
-                    let tmp = (new Set());
-                    let count = 1024;
-
-                    while (tmp.size < count) {
-                        let it = char_random();
-                        tmp.add(it);
-                    }
-                    tmp = [...tmp];
-                    tmp = tmp.join('');
-
-                    data = tmp;
-                    break;
-                }
-
                 default:
                     throw (new Error('bad $seq.'));
             }
