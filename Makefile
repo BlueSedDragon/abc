@@ -2,6 +2,7 @@ all:
 	false
 
 update:
+	git diff
 	git add -A
 	git status
 	git checkout dev
