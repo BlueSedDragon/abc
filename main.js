@@ -29,7 +29,13 @@ function base_get(userinput) {
     var id = 'code-mode';
     var object = document.getElementById(id);
     var value = object.value;
-    base = (Math.floor(Number(value)) || null);
+
+    value = Number(value);
+
+    if (!Number.isSafeInteger(value))
+        throw (new Error('$value is not a integer!'));
+
+    base = value;
     display_update();
     if (!base_auto) table_get();
 }
@@ -415,37 +421,63 @@ var sha256_cached = (function () {
     });
 })();
 
-function aes256ctr_iv() {
-    var data = (new Uint8Array(16));
-    var iv = (new Uint8Array(16));
+var iv_length = null; // byte
+var aes256ctr_iv = (function () {
+    // rust range: length_min..=length_max
+    var length_min = 16;
+    var length_max = 128;
 
-    data[0] = 1;
-    iv[0] = 2;
+    var list = (new Set());
 
-    var password = [];
-    password.push(String(Date.now()));
-    for (let i = 0; i < 1000; ++i) {
-        password.push(String(Math.random()));
-        password.push(String(Math.random()));
-    }
-    password = password.join('');
+    var generate = (function () {
+        iv_length = get_iv_length();
 
-    var new_iv = aes256ctr_encrypt(data, password, iv);
-    return new_iv;
-}
+        if (
+            (!iv_length) ||
+            (iv_length < length_min || iv_length > length_max)
+        ) throw (new Error('bad $iv_length.'));
+
+        var data = (new Uint8Array(iv_length));
+        var iv = (new Uint8Array(iv_length));
+
+        data[0] = 1;
+        iv[0] = 2;
+
+        var password = [];
+        password.push(String(Date.now()));
+        for (let i = 0; i < 1000; ++i) {
+            password.push(String(Math.random()));
+            password.push(String(Math.random()));
+        }
+        password = password.join('');
+
+        var new_iv = aes256ctr_encrypt(data, password, iv);
+        return new_iv;
+    });
+
+    return (function () {
+        var iv = null;
+        var iv_hex = null;
+        do {
+            iv = generate();
+            iv_hex = buf2hex(iv).toLowerCase();
+        } while (list.has(iv_hex));
+        list.add(iv_hex);
+        return iv;
+    });
+})();
 
 function aes256ctr_encrypt(input, password, iv) {
     if (input.constructor !== Uint8Array) input = str2buf(input);
     if ((typeof password) !== 'string') password = buf2str(password);
 
     if (iv.constructor !== Uint8Array) throw (new Error('bad $iv type.'));
-    if (iv.length !== 16) throw (new Error('bad $iv length.'));
-    iv = (new Uint8Array(iv));
-    iv[0] = 0;
+    if (iv.length !== iv_length) throw (new Error('bad $iv length.'));
+    iv = buf2hex(iv).toLowerCase();
 
-    var key = sha256_cached(password);
+    var key = sha256_cached(iv + password);
 
-    var cipher = (new aesjs.ModeOfOperation.ctr(key, (new aesjs.Counter(iv))));
+    var cipher = (new aesjs.ModeOfOperation.ctr(key, (new aesjs.Counter(0))));
     var output = cipher.encrypt(input);
 
     return output;
@@ -523,14 +555,22 @@ function mix_poesy(input, fill) {
 }
 var mix = mix_sentence;
 
-function get_mode() {
-    var crypt = 'crypt-mode';
-    return {
-        'crypt': document.getElementById(crypt).value.toLowerCase()
-    };
+function get_crypt_mode() {
+    return document.getElementById('crypt-mode').value.toLowerCase();
 }
+
+function get_iv_length() {
+    var len = document.getElementById('crypt-iv-length').value;
+    len = Number(len);
+
+    if (!Number.isSafeInteger(len))
+        throw (new Error('$len is not a integer!'));
+
+    return len;
+}
+
 function get_password() {
-    var id = 'crypt-password-input';
+    var id = 'crypt-password';
     var password = document.getElementById(id).value;
     return password;
 }
@@ -553,7 +593,7 @@ function main(type) {
         return;
     }
 
-    var mode = get_mode();
+    var crypt_mode = get_crypt_mode();
     var input = str2buf(get_input());
 
     var output = null;
@@ -561,7 +601,7 @@ function main(type) {
     switch (type) {
         case 0: // encode
             output = input;
-            switch (mode.crypt) {
+            switch (crypt_mode) {
                 case 'none':
                     break;
                 case 'aes-256-ctr':
@@ -578,14 +618,14 @@ function main(type) {
             break;
         case 1: // decode
             output = thuum_decode(input);
-            switch (mode.crypt) {
+            switch (crypt_mode) {
                 case 'none':
                     break;
                 case 'aes-256-ctr':
                     let password = get_password();
 
-                    let iv = output.slice(0, 16);
-                    output = output.slice(16);
+                    let iv = output.slice(0, iv_length);
+                    output = output.slice(iv_length);
 
                     output = aes256ctr_decrypt(output, password, iv);
                     break;
@@ -666,12 +706,27 @@ function test() {
     document.getElementById(id).style.display = 'none';
 }
 
-function start() {
-    test();
+var init = (function () {
+    var called = false;
+    return (function () {
+        if (called) return;
+        called = true;
 
-    base_get();
-    table_get();
-    display_update();
+        test();
+
+        base_get();
+        table_get();
+        display_update();
+
+        window.addEventListener('error', function (event) {
+            console.error(event);
+            alert(`${event.message}\n\n${event.error.stack}`);
+        });
+    });
+})();
+
+if (document) {
+    document.addEventListener('DOMContentLoaded', function (event) {
+        init();
+    });
 }
-setTimeout(start, 0);
-

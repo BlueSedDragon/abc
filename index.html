@@ -132,16 +132,19 @@
         <br />
 
         加密方式：<select id='crypt-mode' onchange='(function(){
-            // to hidden password input box if no encryption.
-            var object = document.getElementById("crypt-password");
-            if(get_mode().crypt !== "none") object.style.display = "inline";
+            // to hidden crypt option if no encryption.
+            var object = document.getElementById("crypt-option");
+            if(get_crypt_mode() !== "none") object.style.display = "inline";
             else object.style.display = "none";
         })();'>
             <option value='aes-256-ctr'>有加密（AES-256-CTR）</option>
             <option value='none'>无加密</option>
         </select><br />
 
-        <span id='crypt-password'>加密密码：<input id='crypt-password-input' type='password' /><br /></span>
+        <div id='crypt-option'>
+            加密密码：<input id='crypt-password' type='password' /><br />
+            IV Length: <input id='crypt-iv-length' type='text' value='32' /><br/>
+        </div>
         <br />
 
         输入：
