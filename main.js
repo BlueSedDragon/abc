@@ -427,7 +427,7 @@ var iv_length = null; // byte
 var iv_length_check = (function () {
     // rust range: length_min..=length_max
     var length_min = 16;
-    var length_max = 128;
+    var length_max = Infinity;
 
     inits.push(function () {
         document.getElementById('crypt-iv-range').innerHTML = `${length_min} ~ ${length_max}`;
@@ -733,6 +733,8 @@ var init = (function () {
         called = true;
 
         test();
+
+        get_iv_length();
 
         base_get();
         table_get();
