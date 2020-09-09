@@ -196,7 +196,23 @@
                 t = t.join("");
                 alert(t);
             }
-        })();'>All Possible</a>
+        })();'>All Possible</a><br />
+
+        <a href='javascript:undefined;' onclick='(function(){
+                var i = document.getElementById("io-input");
+                var o = document.getElementById("io-output");
+
+                i = i.value;
+                o = o.value;
+
+                i = i.length;
+                o = o.length;
+
+
+                var m = 100 / (i / o);
+
+                alert(`Input Length: ${i}\nOutput Length: ${o}\n\n${m}%`);
+        })();'>I/O</a>
     </div>
 </body>
 

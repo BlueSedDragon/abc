@@ -747,7 +747,11 @@ var init = (function () {
 inits.push(init);
 
 if (document) {
+    let called = false;
     document.addEventListener('DOMContentLoaded', function (event) {
+        if (called) return;
+        called = true;
+
         for (let it of inits) {
             it();
         }
