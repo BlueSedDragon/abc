@@ -4,6 +4,8 @@
     | License: GPLv3 or later
 */
 
+var inits = [];
+
 Array.prototype.random = function () {
     return this[Math.floor(Math.random() * this.length)];
 }
@@ -422,20 +424,28 @@ var sha256_cached = (function () {
 })();
 
 var iv_length = null; // byte
-var aes256ctr_iv = (function () {
+var iv_length_check = (function () {
     // rust range: length_min..=length_max
     var length_min = 16;
     var length_max = 128;
 
+    inits.push(function(){
+        document.getElementById('crypt-iv-range').innerHTML = `${length_min} ~ ${length_max}`;
+    });
+
+    return (function (length) {
+        if (
+            (!length) ||
+            (length < length_min || length > length_max)
+        ) throw (new Error('bad $iv_length.'));
+    });
+})();
+
+var aes256ctr_iv = (function () {
     var list = (new Set());
 
     var generate = (function () {
-        iv_length = get_iv_length();
-
-        if (
-            (!iv_length) ||
-            (iv_length < length_min || iv_length > length_max)
-        ) throw (new Error('bad $iv_length.'));
+        get_iv_length();
 
         var data = (new Uint8Array(iv_length));
         var iv = (new Uint8Array(iv_length));
@@ -566,6 +576,9 @@ function get_iv_length() {
     if (!Number.isSafeInteger(len))
         throw (new Error('$len is not a integer!'));
 
+    iv_length_check(len);
+
+    iv_length = len;
     return len;
 }
 
@@ -605,6 +618,8 @@ function main(type) {
                 case 'none':
                     break;
                 case 'aes-256-ctr':
+                    get_iv_length();
+
                     let password = get_password();
                     let iv = aes256ctr_iv();
 
@@ -622,7 +637,12 @@ function main(type) {
                 case 'none':
                     break;
                 case 'aes-256-ctr':
+                    get_iv_length();
+
                     let password = get_password();
+
+                    if (output.length < iv_length)
+                        throw (new Error('bad $output length.'));
 
                     let iv = output.slice(0, iv_length);
                     output = output.slice(iv_length);
@@ -720,13 +740,16 @@ var init = (function () {
 
         window.addEventListener('error', function (event) {
             console.error(event);
-            alert(`${event.message}\n\n${event.error.stack}`);
+            alert(`${event.message}\n\n${event.error ? event.error.stack : ''}`);
         });
     });
 })();
+inits.push(init);
 
 if (document) {
     document.addEventListener('DOMContentLoaded', function (event) {
-        init();
+        for (let it of inits) {
+            it();
+        }
     });
 }
