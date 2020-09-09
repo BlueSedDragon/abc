@@ -509,7 +509,7 @@ function aes256ctr_encrypt(input, password, iv) {
     password = str2buf(password);
     password = buf2hex(password);
 
-    var key = sha256_cached(`${iv}#${password}`);
+    var key = sha256(`${iv}#${password}`);
 
     var cipher = (new aesjs.ModeOfOperation.ctr(key, (new aesjs.Counter(0))));
     var output = cipher.encrypt(input);
