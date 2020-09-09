@@ -447,7 +447,7 @@ var iv_length_check = (function () {
     var length_max = Infinity;
 
     inits.push(function () {
-        document.getElementById('crypt-iv-range').innerHTML = `${length_min} ~ ${length_max}`;
+        document.getElementById('crypt-iv-range').innerHTML = `${String(length_min).toLowerCase()} ~ ${String(length_max).toLowerCase()}`;
     });
 
     return (function (length) {
