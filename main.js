@@ -184,21 +184,38 @@ var str2char = (function () {
         return [...char];
     });
 })();
+
+// rust range: start..=end
+function loop(start, end) {
+    if (!Number.isSafeInteger(start)) throw (new Error('bad $start type.'));
+    if (!Number.isSafeInteger(end)) throw (new Error('bad $end type.'));
+
+    if (start > end) throw (new Error('bad range!'));
+
+    var count = start;
+    return (function () {
+        if (count > end)
+            count = start;
+
+        return (count++);
+    });
+}
+
 function char2table(char) {
     var once_char = [...char];
     var new_table = [];
 
-    var count = 0;
+    var counter = loop(0, base - 1);
     while (once_char.length > 0) {
-        let num = ((count++) % base);
-        if (!(new_table[num])) new_table[num] = [];
-        new_table[num].push(once_char.pop());
+        let index = counter();
+        if (!(new_table[index])) new_table[index] = [];
+        new_table[index].push(once_char.pop());
     }
     return new_table;
 }
 
 var hex2buf = (function () {
-    var list = '0123456789abcdef';
+    var list = '0123456789abcdef'.toLowerCase();
     return (function (hex) {
         if ((typeof hex) !== 'string') throw (new Error('bad $hex type.'));
         if ((hex.length % 2) !== 0) throw (new Error('bad $hex length.'));
