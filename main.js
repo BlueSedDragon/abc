@@ -450,20 +450,7 @@ function aes256ctr_encrypt(input, password, iv) {
 
     return output;
 }
-function aes256ctr_decrypt(input, password, iv) {
-    if (input.constructor !== Uint8Array) input = str2buf(input);
-    if ((typeof password) !== 'string') password = buf2str(password);
-
-    if (iv.constructor !== Uint8Array) throw (new Error('bad $iv type.'));
-    if (iv.length !== 16) throw (new Error('bad $iv length.'));
-    iv[0] = 0;
-
-    var key = sha256_cached(password);
-
-    var cipher = (new aesjs.ModeOfOperation.ctr(key, (new aesjs.Counter(iv))));
-    var output = cipher.decrypt(input);
-    return output;
-}
+var aes256ctr_decrypt = aes256ctr_encrypt;
 
 function mix_sentence(input) {
     if ((typeof input) !== 'string') throw (new Error('bad $input type.'));
