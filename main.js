@@ -429,7 +429,7 @@ var iv_length_check = (function () {
     var length_min = 16;
     var length_max = 128;
 
-    inits.push(function(){
+    inits.push(function () {
         document.getElementById('crypt-iv-range').innerHTML = `${length_min} ~ ${length_max}`;
     });
 
