@@ -70,7 +70,11 @@ function integer_random(min, max) {
     if (!Number.isSafeInteger(max)) throw (new Error('bad $max type.'));
 
     if (min === max) return min;
-    if (min > max) throw (new Error('bad range!'));
+
+    if (
+        (min < 0 || max < 0) ||
+        min > max
+    ) throw (new Error('bad range!'));
 
     var result = null;
 
