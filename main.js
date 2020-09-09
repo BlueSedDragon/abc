@@ -506,7 +506,10 @@ function aes256ctr_encrypt(input, password, iv) {
     if (iv.length !== iv_length) throw (new Error('bad $iv length.'));
     iv = buf2hex(iv).toLowerCase();
 
-    var key = sha256_cached(iv + password);
+    password = str2buf(password);
+    password = buf2hex(password);
+
+    var key = sha256_cached(`${iv}#${password}`);
 
     var cipher = (new aesjs.ModeOfOperation.ctr(key, (new aesjs.Counter(0))));
     var output = cipher.encrypt(input);
