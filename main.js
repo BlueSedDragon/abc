@@ -101,8 +101,8 @@ function char_random() {
     return result;
 }
 
-var char_builtin = (() => {
-    var chars = {
+{
+    let chars = {
         0: '之乎者也何乃若及哉亦以而其爲則矣',
         1: '子丑寅卯辰巳午未申酉戌亥东南西北',
         5: '将于从在把被让给和与或的得地则以',
@@ -113,7 +113,7 @@ var char_builtin = (() => {
         10: '元角秒分时日月年寸米里厘毫斤吨克',
     };
 
-    return ((seq) => {
+    var char_builtin = (function(seq) {
         base_auto = true;
 
         var data = null;
@@ -130,7 +130,7 @@ var char_builtin = (() => {
         document.getElementById('gen-table-body').value = data;
         table_get();
     });
-})();
+}
 
 var table = [];
 function table_get() {
@@ -168,13 +168,13 @@ function display_update() {
     else info.innerHTML = '';
 }
 
-var str2char = (() => {
-    var band = (new Set([
+{
+    let band = (new Set([
         '', '：', '‘', '’', '，', '。', '、', '！', '“', '”',
         '？', '（', '）', '《', '》', '－', '「', '」', '；'
     ]));
 
-    return ((data) => {
+    var str2char = (function(data) {
         var char = (new Set());
         for (let seq in data) {
             let num = data.charCodeAt(seq);
@@ -187,7 +187,7 @@ var str2char = (() => {
         }
         return [...char];
     });
-})();
+}
 
 // rust range: start..=end
 function loop(start, end) {
@@ -238,17 +238,17 @@ function buf_concat(bufs) {
     return result;
 }
 
-var hex2buf = (() => {
-    var mapping = {};
+{
+    let mapping = {};
     for (let i = 0; i <= 0xff; ++i) {
         let ii = i.toString(16);
         if (ii.length < 2) ii = ('0' + ii);
         mapping[ii] = i;
     }
 
-    var list = '0123456789abcdef'.toLowerCase();
+    let list = '0123456789abcdef'.toLowerCase();
 
-    return ((hex) => {
+    var hex2buf = (function(hex) {
         if ((typeof hex) !== 'string') throw (new Error('bad $hex type.'));
         if ((hex.length % 2) !== 0) throw (new Error('bad $hex length.'));
 
@@ -268,17 +268,17 @@ var hex2buf = (() => {
         buf = (new Uint8Array(buf));
         return buf;
     });
-})();
+}
 
-var buf2hex = (() => {
-    var mapping = {};
+{
+    let mapping = {};
     for (let i = 0; i <= 0xff; ++i) {
         let ii = i.toString(16);
         if (ii.length < 2) ii = ('0' + ii);
         mapping[i] = ii;
     }
 
-    return ((buf) => {
+    var buf2hex = (function(buf) {
         if (buf.constructor !== Uint8Array) throw (new Error('bad $buf type.'));
 
         var hex = [];
@@ -289,7 +289,7 @@ var buf2hex = (() => {
         hex = hex.join('');
         return hex.toLowerCase();
     });
-})();
+}
 
 function str2buf(str) {
     if ((typeof str) !== 'string') throw (new Error('bad $str type.'));
@@ -478,22 +478,22 @@ async function sha256(input) {
 }
 
 var iv_length = null; // byte
-var iv_length_check = (() => {
+{
     // rust range: length_min..=length_max
-    var length_min = 16;
-    var length_max = 1024;
+    let length_min = 16;
+    let length_max = 1024;
 
     inits.push(() => {
         document.getElementById('crypt-iv-range').innerHTML = `${String(length_min).toLowerCase()} ~ ${String(length_max).toLowerCase()}`;
     });
 
-    return ((length) => {
+    var iv_length_check = (function(length) {
         if (
             (!length) ||
             (length < length_min || length > length_max)
         ) throw (new Error('bad $iv_length.'));
     });
-})();
+}
 
 function random(length) {
     if (
@@ -528,15 +528,15 @@ function random(length) {
     }
 }
 
-var generate_iv = (() => {
-    var list = (new Set());
+{
+    let list = (new Set());
 
-    var generate = (() => {
+    let generate = (() => {
         get_iv_length();
         return random(iv_length);
     });
 
-    return (() => {
+    var generate_iv = (function() {
         var iv = null;
         var iv_hex = null;
         do {
@@ -546,7 +546,7 @@ var generate_iv = (() => {
         list.add(iv_hex);
         return iv;
     });
-})();
+}
 
 async function aes256ctr_encrypt(input, password, iv) {
     if (input.constructor !== Uint8Array) input = str2buf(input);
