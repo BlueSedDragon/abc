@@ -101,7 +101,7 @@ function char_random() {
     return result;
 }
 
-var char_builtin = (function () {
+var char_builtin = (() => {
     var chars = {
         0: '之乎者也何乃若及哉亦以而其爲則矣',
         1: '子丑寅卯辰巳午未申酉戌亥东南西北',
@@ -113,7 +113,7 @@ var char_builtin = (function () {
         10: '元角秒分时日月年寸米里厘毫斤吨克',
     };
 
-    return (function (seq) {
+    return ((seq) => {
         base_auto = true;
 
         var data = null;
@@ -168,13 +168,13 @@ function display_update() {
     else info.innerHTML = '';
 }
 
-var str2char = (function () {
+var str2char = (() => {
     var band = (new Set([
         '', '：', '‘', '’', '，', '。', '、', '！', '“', '”',
         '？', '（', '）', '《', '》', '－', '「', '」', '；'
     ]));
 
-    return (function (data) {
+    return ((data) => {
         var char = (new Set());
         for (let seq in data) {
             let num = data.charCodeAt(seq);
@@ -197,7 +197,7 @@ function loop(start, end) {
     if (start > end) throw (new Error('bad range!'));
 
     var count = start;
-    return (function () {
+    return (() => {
         if (count > end)
             count = start;
 
@@ -218,7 +218,27 @@ function char2table(char) {
     return new_table;
 }
 
-var hex2buf = (function () {
+function buf_concat(bufs) {
+    if (!Array.isArray(bufs)) throw (new Error('bad $bufs type.'));
+
+    var total = 0;
+    for (let it of bufs) {
+        if (it.constructor !== Uint8Array) throw (new Error('bad $it type.'));
+        total += it.length;
+    }
+
+    var result = (new Uint8Array(total));
+
+    var offset = 0;
+    for (let it of bufs) {
+        result.set(it, offset);
+        offset += it.length;
+    }
+
+    return result;
+}
+
+var hex2buf = (() => {
     var mapping = {};
     for (let i = 0; i <= 0xff; ++i) {
         let ii = i.toString(16);
@@ -228,7 +248,7 @@ var hex2buf = (function () {
 
     var list = '0123456789abcdef'.toLowerCase();
 
-    return (function (hex) {
+    return ((hex) => {
         if ((typeof hex) !== 'string') throw (new Error('bad $hex type.'));
         if ((hex.length % 2) !== 0) throw (new Error('bad $hex length.'));
 
@@ -250,7 +270,7 @@ var hex2buf = (function () {
     });
 })();
 
-var buf2hex = (function () {
+var buf2hex = (() => {
     var mapping = {};
     for (let i = 0; i <= 0xff; ++i) {
         let ii = i.toString(16);
@@ -258,7 +278,7 @@ var buf2hex = (function () {
         mapping[i] = ii;
     }
 
-    return (function (buf) {
+    return ((buf) => {
         if (buf.constructor !== Uint8Array) throw (new Error('bad $buf type.'));
 
         var hex = [];
@@ -440,40 +460,34 @@ function thuum_decode(input) {
     return output;
 }
 
-function sha256(input) {
-    if ((typeof input) !== 'string') {
-        if (input.constructor === Uint8Array) input = buf2str(input);
-        else throw (new Error('bad $input type.'));
-    }
+async function hash(mode, input) {
+    if (input.constructor !== Uint8Array) input = str2buf(input);
 
-    var hex = (new Hashes.SHA256()).hex(input);
-    var output = hex2buf(hex);
+    var output = await crypto.subtle.digest(mode, input);
+    output = (new Uint8Array(output));
     return output;
 }
 
-var sha256_cached = (function () {
-    var cache = {};
-    return (function (input) {
-        var output = cache[input];
-        if (output) return output;
-
-        output = sha256(input);
-        cache[input] = output;
-        return output;
-    });
-})();
+async function sha512(input) {
+    var output = await hash('SHA-512', input);
+    return output;
+}
+async function sha256(input) {
+    var output = await hash('SHA-256', input);
+    return output;
+}
 
 var iv_length = null; // byte
-var iv_length_check = (function () {
+var iv_length_check = (() => {
     // rust range: length_min..=length_max
     var length_min = 16;
     var length_max = 1024;
 
-    inits.push(function () {
+    inits.push(() => {
         document.getElementById('crypt-iv-range').innerHTML = `${String(length_min).toLowerCase()} ~ ${String(length_max).toLowerCase()}`;
     });
 
-    return (function (length) {
+    return ((length) => {
         if (
             (!length) ||
             (length < length_min || length > length_max)
@@ -514,15 +528,15 @@ function random(length) {
     }
 }
 
-var generate_iv = (function () {
+var generate_iv = (() => {
     var list = (new Set());
 
-    var generate = (function () {
+    var generate = (() => {
         get_iv_length();
         return random(iv_length);
     });
 
-    return (function () {
+    return (() => {
         var iv = null;
         var iv_hex = null;
         do {
@@ -534,25 +548,51 @@ var generate_iv = (function () {
     });
 })();
 
-function aes256ctr_encrypt(input, password, iv) {
+async function aes256ctr_encrypt(input, password, iv) {
     if (input.constructor !== Uint8Array) input = str2buf(input);
+
     if ((typeof password) !== 'string') password = buf2str(password);
+    password = str2buf(password);
+    password = buf2hex(password).toLowerCase();
 
     if (iv.constructor !== Uint8Array) throw (new Error('bad $iv type.'));
     if (iv.length !== iv_length) throw (new Error('bad $iv length.'));
     iv = buf2hex(iv).toLowerCase();
 
-    password = str2buf(password);
-    password = buf2hex(password).toLowerCase();
+    var key = await sha512(`${iv}#${password}`);
+    key = await sha256(key);
 
-    var key = sha256(`${iv}#${password}`);
+    key = await crypto.subtle.importKey('raw', key.buffer, 'AES-CTR', false, ['encrypt', 'decrypt']);
 
-    var cipher = (new aesjs.ModeOfOperation.ctr(key, (new aesjs.Counter(0))));
-    var output = cipher.encrypt(input);
+    var output = await crypto.subtle.encrypt({
+        name: 'AES-CTR',
+        counter: (new Uint8Array(16)),
+        length: 128
+    }, key, input);
+    output = (new Uint8Array(output));
 
     return output;
 }
 var aes256ctr_decrypt = aes256ctr_encrypt;
+
+function aes256ctr_test() {
+    var plaintext = `hello world at ${Date.now()}!`;
+
+    var iv = generate_iv();
+    var password = '123456';
+
+    console.log('plaintext:', plaintext);
+    console.log('password:', password);
+    console.log('iv:', iv);
+
+    aes256ctr_encrypt(plaintext, password, iv).then((encrypted) => {
+        console.log('encrypted:', encrypted);
+        aes256ctr_decrypt(encrypted, password, iv).then((decrypted) => {
+            decrypted = buf2str(decrypted);
+            console.log('decrypted:', decrypted);
+        });
+    });
+}
 
 function mix_sentence(input) {
     if ((typeof input) !== 'string') throw (new Error('bad $input type.'));
@@ -657,9 +697,8 @@ function set_output(data) {
     document.getElementById(id).value = data;
 }
 
-function main(type) {
-    if ((typeof type) !== 'number' || Number.isNaN(type)) return null;
-    if ((!Number.isInteger(type)) || (!Number.isSafeInteger(type))) return null;
+async function _main(type) {
+    if (!Number.isSafeInteger(type)) throw (new Error('bad $type type.'));
 
     if (char.length < base) {
         alert('字符集不全！需要生成字符集后才能使用。');
@@ -683,8 +722,8 @@ function main(type) {
                     let password = get_password();
                     let iv = generate_iv();
 
-                    output = aes256ctr_encrypt(output, password, iv);
-                    output = (new Uint8Array([].concat([...iv], [...output])));
+                    output = await aes256ctr_encrypt(output, password, iv);
+                    output = buf_concat([iv, output]);
                     break;
                 default:
                     break;
@@ -707,7 +746,7 @@ function main(type) {
                     let iv = output.slice(0, iv_length);
                     output = output.slice(iv_length);
 
-                    output = aes256ctr_decrypt(output, password, iv);
+                    output = await aes256ctr_decrypt(output, password, iv);
                     break;
                 default:
                     break;
@@ -718,6 +757,14 @@ function main(type) {
             throw (new Error('bad $type.'));
     }
     set_output(output);
+}
+async function main(...args) {
+    try {
+        await _main(...args);
+    } catch (error) {
+        alert(`${String(error)}\n\n${error.stack}`);
+        throw error;
+    }
 }
 
 function test() {
@@ -786,11 +833,13 @@ function test() {
     document.getElementById(id).style.display = 'none';
 }
 
-var init = (function () {
+var init = (() => {
     var called = false;
-    return (function () {
+    return (() => {
         if (called) return;
         called = true;
+
+        console.log(`INIT at ${Date.now()}`);
 
         test();
 
@@ -800,7 +849,7 @@ var init = (function () {
         table_get();
         display_update();
 
-        window.addEventListener('error', function (event) {
+        window.addEventListener('error', (event) => {
             console.error(event);
             alert(`${event.message}\n\n${event.error ? event.error.stack : ''}`);
         });
@@ -810,7 +859,7 @@ inits.push(init);
 
 if (document) {
     let called = false;
-    document.addEventListener('DOMContentLoaded', function (event) {
+    document.addEventListener('DOMContentLoaded', (event) => {
         if (called) return;
         called = true;
 
