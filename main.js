@@ -4,6 +4,8 @@
     | License: GPLv3 or later
 */
 
+'use strict';
+
 var inits = [];
 
 Array.prototype.random = function () {
