@@ -219,7 +219,15 @@ function char2table(char) {
 }
 
 var hex2buf = (function () {
+    var mapping = {};
+    for (let i = 0; i <= 0xff; ++i) {
+        let ii = i.toString(16);
+        if (ii.length < 2) ii = ('0' + ii);
+        mapping[ii] = i;
+    }
+
     var list = '0123456789abcdef'.toLowerCase();
+
     return (function (hex) {
         if ((typeof hex) !== 'string') throw (new Error('bad $hex type.'));
         if ((hex.length % 2) !== 0) throw (new Error('bad $hex length.'));
@@ -231,7 +239,10 @@ var hex2buf = (function () {
 
         var buf = [];
         while (hex.length > 0) {
-            buf.push(parseInt(hex.slice(0, 2), 16));
+            let it = hex.slice(0, 2);
+            it = mapping[it];
+            buf.push(it);
+
             hex = hex.slice(2);
         }
         buf = (new Uint8Array(buf));
@@ -239,18 +250,26 @@ var hex2buf = (function () {
     });
 })();
 
-function buf2hex(buf) {
-    if (buf.constructor !== Uint8Array) throw (new Error('bad $buf type.'));
-
-    var hex = [];
-    for (let i of buf) {
+var buf2hex = (function () {
+    var mapping = {};
+    for (let i = 0; i <= 0xff; ++i) {
         let ii = i.toString(16);
         if (ii.length < 2) ii = ('0' + ii);
-        hex.push(ii);
+        mapping[i] = ii;
     }
-    hex = hex.join('');
-    return hex.toLowerCase();
-}
+
+    return (function (buf) {
+        if (buf.constructor !== Uint8Array) throw (new Error('bad $buf type.'));
+
+        var hex = [];
+        for (let it of buf) {
+            it = mapping[it];
+            hex.push(it);
+        }
+        hex = hex.join('');
+        return hex.toLowerCase();
+    });
+})();
 
 function str2buf(str) {
     if ((typeof str) !== 'string') throw (new Error('bad $str type.'));
@@ -462,35 +481,45 @@ var iv_length_check = (function () {
     });
 })();
 
-var aes256ctr_iv = (function () {
+function random(length) {
+    if (
+        (!Number.isSafeInteger(length)) ||
+        length < 0
+    ) throw (new Error('bad $length type.'));
+
+    var result = (new Uint8Array(length));
+    if (length === 0) return result;
+
+    if (length <= 65536) {
+        crypto.getRandomValues(result);
+        return result;
+    }
+
+    var index = 0;
+    while (1) {
+        let left = (length - index);
+        let len = (left >= 65536 ? 65536 : left);
+
+        let it = (new Uint8Array(len));
+        crypto.getRandomValues(it);
+
+        for (let i = 0; i < len; ++i) {
+            result[index] = it[i];
+
+            index += 1;
+            if (index >= length) {
+                return result;
+            }
+        }
+    }
+}
+
+var generate_iv = (function () {
     var list = (new Set());
 
     var generate = (function () {
         get_iv_length();
-
-        var data = (new Uint8Array(iv_length));
-        var iv = (new Uint8Array(iv_length));
-
-        data[0] = 1;
-        iv[0] = 2;
-
-        var password = [];
-
-        password.push(String(Date.now()));
-        password.push('/');
-
-        for (let i = 0; i < 1000; ++i) {
-            password.push(String(Math.random()));
-            password.push('#');
-        }
-
-        password.push('/');
-        password.push(String(Date.now()));
-
-        password = password.join('');
-
-        var new_iv = aes256ctr_encrypt(data, password, iv);
-        return new_iv;
+        return random(iv_length);
     });
 
     return (function () {
@@ -652,7 +681,7 @@ function main(type) {
                     get_iv_length();
 
                     let password = get_password();
-                    let iv = aes256ctr_iv();
+                    let iv = generate_iv();
 
                     output = aes256ctr_encrypt(output, password, iv);
                     output = (new Uint8Array([].concat([...iv], [...output])));
