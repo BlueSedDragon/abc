@@ -709,7 +709,6 @@ async function _main(type) {
     var input = str2buf(get_input());
 
     var output = null;
-    set_output('');
     switch (type) {
         case 0: // encode
             output = input;
