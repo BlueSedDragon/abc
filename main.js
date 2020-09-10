@@ -249,7 +249,7 @@ function buf2hex(buf) {
         hex.push(ii);
     }
     hex = hex.join('');
-    return hex;
+    return hex.toLowerCase();
 }
 
 function str2buf(str) {
@@ -475,11 +475,18 @@ var aes256ctr_iv = (function () {
         iv[0] = 2;
 
         var password = [];
+
         password.push(String(Date.now()));
+        password.push('/');
+
         for (let i = 0; i < 1000; ++i) {
             password.push(String(Math.random()));
-            password.push(String(Math.random()));
+            password.push('#');
         }
+
+        password.push('/');
+        password.push(String(Date.now()));
+
         password = password.join('');
 
         var new_iv = aes256ctr_encrypt(data, password, iv);
@@ -507,7 +514,7 @@ function aes256ctr_encrypt(input, password, iv) {
     iv = buf2hex(iv).toLowerCase();
 
     password = str2buf(password);
-    password = buf2hex(password);
+    password = buf2hex(password).toLowerCase();
 
     var key = sha256(`${iv}#${password}`);
 
