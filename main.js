@@ -239,6 +239,7 @@ function buf_concat(bufs) {
 
     return result;
 }
+
 function buf_equal(a, b) {
     if (a.constructor !== Uint8Array) throw (new Error('bad $a type.'));
     if (b.constructor !== Uint8Array) throw (new Error('bad $b type.'));
