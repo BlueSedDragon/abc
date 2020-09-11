@@ -239,6 +239,22 @@ function buf_concat(bufs) {
 
     return result;
 }
+function buf_equal(a, b) {
+    if (a.constructor !== Uint8Array) throw (new Error('bad $a type.'));
+    if (b.constructor !== Uint8Array) throw (new Error('bad $b type.'));
+
+    var alen = a.length;
+    if (alen !== b.length) return false;
+
+    for (let i = 0; i < alen; ++i) {
+        let it_a = a[i];
+        let it_b = b[i];
+
+        if (it_a !== it_b) return false;
+    }
+
+    return true;
+}
 
 {
     let mapping = {};
@@ -550,9 +566,8 @@ function random(length) {
     });
 }
 
-async function aes256ctr_encrypt(input, password, iv) {
-    if (input.constructor !== Uint8Array) input = str2buf(input);
-
+// tag length is 64 bytes (sha512) forever.
+async function aes256ctr_tag(password, iv) {
     if ((typeof password) !== 'string') password = buf2str(password);
     password = str2buf(password);
     password = buf2hex(password).toLowerCase();
@@ -561,21 +576,56 @@ async function aes256ctr_encrypt(input, password, iv) {
     if (iv.length !== iv_length) throw (new Error('bad $iv length.'));
     iv = buf2hex(iv).toLowerCase();
 
-    var key = await sha512(`${iv}#${password}`);
-    key = await sha256(key);
+    var tag = await sha512(`${iv}#${password}`);
+    return tag;
+}
+async function aes256ctr_crypt(input, raw_key) {
+    if (input.constructor !== Uint8Array) input = str2buf(input);
+    if (raw_key.constructor !== Uint8Array || raw_key.length !== 32) throw (new Error('bad $raw_key.'));
 
-    key = await crypto.subtle.importKey('raw', key.buffer, 'AES-CTR', false, ['encrypt', 'decrypt']);
-
+    var key = await crypto.subtle.importKey('raw', raw_key.buffer, 'AES-CTR', false, ['encrypt', 'decrypt']);
     var output = await crypto.subtle.encrypt({
         name: 'AES-CTR',
-        counter: (new Uint8Array(16)),
-        length: 128
+
+        counter: (new Uint8Array(16)), // all zero
+        length: 128 // counter length (bit)
     }, key, input);
     output = (new Uint8Array(output));
 
     return output;
 }
-var aes256ctr_decrypt = aes256ctr_encrypt;
+
+async function aes256ctr_encrypt(raw_input, password, iv) {
+    if (raw_input.constructor !== Uint8Array) raw_input = str2buf(raw_input);
+
+    var tag = await aes256ctr_tag(password, iv);
+    var key = await sha256(tag);
+
+    var input = buf_concat([raw_input, tag]);
+    var output = await aes256ctr_crypt(input, key);
+
+    return output;
+}
+async function aes256ctr_decrypt(input, password, iv) {
+    if (input.constructor !== Uint8Array) input = str2buf(input);
+
+    var tag = await aes256ctr_tag(password, iv);
+    var key = await sha256(tag);
+
+    var output = await aes256ctr_crypt(input, key);
+    if (output.length < 64) throw (new Error('bad $output.'));
+
+    var otag_point = output.length - 64;
+    if (otag_point < 0) throw (new Error('bad $otag_point.'));
+
+    var otag = output.slice(otag_point);
+    if (otag.length !== 64) throw (new Error('bad $otag.'));
+
+    if (!buf_equal(otag, tag)) throw (new Error('verify failed! $otag !== $tag.'));
+    output = output.slice(0, otag_point);
+
+    return output;
+}
 
 function aes256ctr_test() {
     var plaintext = `hello world at ${Date.now()}!`;
@@ -592,8 +642,8 @@ function aes256ctr_test() {
         aes256ctr_decrypt(encrypted, password, iv).then((decrypted) => {
             decrypted = buf2str(decrypted);
             console.log('decrypted:', decrypted);
-        });
-    });
+        }).catch((err) => { throw err; });
+    }).catch((err) => { throw err; });
 }
 
 function mix_sentence(input) {
