@@ -115,7 +115,7 @@ function char_random() {
         10: '元角秒分时日月年寸米里厘毫斤吨克',
     };
 
-    var char_builtin = (function(seq) {
+    var char_builtin = (function (seq) {
         base_auto = true;
 
         var data = null;
@@ -176,7 +176,7 @@ function display_update() {
         '？', '（', '）', '《', '》', '－', '「', '」', '；'
     ]));
 
-    var str2char = (function(data) {
+    var str2char = (function (data) {
         var char = (new Set());
         for (let seq in data) {
             let num = data.charCodeAt(seq);
@@ -250,7 +250,7 @@ function buf_concat(bufs) {
 
     let list = '0123456789abcdef'.toLowerCase();
 
-    var hex2buf = (function(hex) {
+    var hex2buf = (function (hex) {
         if ((typeof hex) !== 'string') throw (new Error('bad $hex type.'));
         if ((hex.length % 2) !== 0) throw (new Error('bad $hex length.'));
 
@@ -280,7 +280,7 @@ function buf_concat(bufs) {
         mapping[i] = ii;
     }
 
-    var buf2hex = (function(buf) {
+    var buf2hex = (function (buf) {
         if (buf.constructor !== Uint8Array) throw (new Error('bad $buf type.'));
 
         var hex = [];
@@ -489,7 +489,7 @@ var iv_length = null; // byte
         document.getElementById('crypt-iv-range').innerHTML = `${String(length_min).toLowerCase()} ~ ${String(length_max).toLowerCase()}`;
     });
 
-    var iv_length_check = (function(length) {
+    var iv_length_check = (function (length) {
         if (
             (!length) ||
             (length < length_min || length > length_max)
@@ -538,7 +538,7 @@ function random(length) {
         return random(iv_length);
     });
 
-    var generate_iv = (function() {
+    var generate_iv = (function () {
         var iv = null;
         var iv_hex = null;
         do {
