@@ -495,31 +495,28 @@ function random(length) {
         length < 0
     ) throw (new Error('bad $length type.'));
 
-    var result = (new Uint8Array(length));
-    if (length === 0) return result;
-
     if (length <= 65536) {
+        let result = (new Uint8Array(length));
+        if (length === 0) return result;
+
         crypto.getRandomValues(result);
         return result;
     }
 
-    var index = 0;
-    while (1) {
-        let left = (length - index);
-        let len = (left >= 65536 ? 65536 : left);
+    var results = [];
+    var left = length;
+    while (left > 0) {
+        let size = (left >= 65536 ? 65536 : left);
+        let chunk = (new Uint8Array(size));
 
-        let it = (new Uint8Array(len));
-        crypto.getRandomValues(it);
+        crypto.getRandomValues(chunk);
+        results.push(chunk);
 
-        for (let i = 0; i < len; ++i) {
-            result[index] = it[i];
-
-            index += 1;
-            if (index >= length) {
-                return result;
-            }
-        }
+        left -= size;
     }
+
+    var result = buf_concat(results);
+    return result;
 }
 
 {
