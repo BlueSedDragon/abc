@@ -227,9 +227,6 @@
 
             t = Date.now();window.sha256(d);t = (Date.now() - t);alert(`sha256() first: ${t} millisecond`);
             t = Date.now();window.sha256(d);t = (Date.now() - t);alert(`sha256() two: ${t} millisecond`);
-
-            t = Date.now();window.sha256_cached(d); t = (Date.now() - t);alert(`sha256_cached() first: ${t} millisecond`);
-            t = Date.now();window.sha256_cached(d); t = (Date.now() - t);alert(`sha256_cached() two: ${t} millisecond`);
         })();'>Test Hash Time</a>
 
         <br />
@@ -254,13 +251,16 @@
                 i = i.value;
                 o = o.value;
 
+                i = str2buf(i);
+                o = str2buf(o);
+
                 i = i.length;
                 o = o.length;
 
 
                 var m = 100 / (i / o);
 
-                alert(`Input Length: ${i}\nOutput Length: ${o}\n\n${m}%`);
+                alert(`Input Length: ${i} bytes\nOutput Length: ${o} bytes\n\n${m} %`);
         })();'>Size of I/O</a>
     </div>
 </body>
