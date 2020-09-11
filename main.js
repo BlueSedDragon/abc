@@ -312,37 +312,13 @@ function buf_equal(a, b) {
 function str2buf(str) {
     if ((typeof str) !== 'string') throw (new Error('bad $str type.'));
 
-    var buf = [];
-    for (let i = 0, l = str.length; i < l; ++i) {
-        let tmp = str.charCodeAt(i);
-        if (tmp <= 255) { // ascii handle.
-            buf.push(tmp);
-            continue;
-        }
-
-        // other handle.
-        let ii = str[i];
-        tmp = encodeURIComponent(ii).split('%');
-        tmp.shift();
-        for (let iii of tmp) {
-            buf.push(parseInt(iii, 16));
-        }
-    }
-    buf = (new Uint8Array(buf));
+    var buf = (new TextEncoder()).encode(str);
     return buf;
 }
 function buf2str(buf) {
     if (buf.constructor !== Uint8Array) throw (new Error('bad $buf type.'));
 
-    var str = [];
-    for (let i of buf) {
-        str.push('%');
-
-        let ii = i.toString(16);
-        if (ii.length < 2) ii = ('0' + ii);
-        str.push(ii);
-    }
-    str = decodeURIComponent(str.join(''));
+    var str = (new TextDecoder()).decode(buf);
     return str;
 }
 
