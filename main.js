@@ -312,13 +312,13 @@ function buf_equal(a, b) {
 function str2buf(str) {
     if ((typeof str) !== 'string') throw (new Error('bad $str type.'));
 
-    var buf = (new TextEncoder()).encode(str);
+    var buf = (new TextEncoder('utf-8')).encode(str);
     return buf;
 }
 function buf2str(buf) {
     if (buf.constructor !== Uint8Array) throw (new Error('bad $buf type.'));
 
-    var str = (new TextDecoder()).decode(buf);
+    var str = (new TextDecoder('utf-8')).decode(buf);
     return str;
 }
 
