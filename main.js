@@ -504,19 +504,22 @@ function random(length) {
         return result;
     }
 
-    var results = [];
-    var left = length;
-    while (left > 0) {
+    var result = (new Uint8Array(length));
+    var offset = 0;
+
+    while (1) {
+        let left = (length - offset);
+        if (left <= 0) break;
+
         let size = (left >= 65536 ? 65536 : left);
         let chunk = (new Uint8Array(size));
 
         crypto.getRandomValues(chunk);
-        results.push(chunk);
+        result.set(chunk, offset);
 
-        left -= size;
+        offset += size;
     }
 
-    var result = buf_concat(results);
     return result;
 }
 
