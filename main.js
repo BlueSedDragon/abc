@@ -543,19 +543,33 @@ function random(length) {
     });
 }
 
+// key length is 32 bytes (sha256) forever.
+async function aes256ctr_key(password, iv) {
+    if (password.constructor !== Uint8Array) password = str2buf(password);
+
+    var tag = await aes256ctr_tag(password, iv);
+    var key = await sha256(tag);
+
+    return key;
+}
+
 // tag length is 64 bytes (sha512) forever.
-async function aes256ctr_tag(password, iv) {
-    if ((typeof password) !== 'string') password = buf2str(password);
-    password = str2buf(password);
-    password = buf2hex(password).toLowerCase();
+// $data is plaintext or password.
+async function aes256ctr_tag(data, iv) {
+    if (data.constructor !== Uint8Array) throw (new Error('bad $data type.'));
 
     if (iv.constructor !== Uint8Array) throw (new Error('bad $iv type.'));
     if (iv.length !== iv_length) throw (new Error('bad $iv length.'));
-    iv = buf2hex(iv).toLowerCase();
 
-    var tag = await sha512(`${iv}#${password}`);
+    var data_hash = await sha512(data);
+    var iv_hash = await sha512(iv);
+
+    var pre_tag = buf_concat([data_hash, iv_hash]);
+    var tag = await sha512(pre_tag);
+
     return tag;
 }
+
 async function aes256ctr_crypt(input, raw_key) {
     if (input.constructor !== Uint8Array) input = str2buf(input);
     if (raw_key.constructor !== Uint8Array || raw_key.length !== 32) throw (new Error('bad $raw_key.'));
@@ -572,36 +586,36 @@ async function aes256ctr_crypt(input, raw_key) {
     return output;
 }
 
-async function aes256ctr_encrypt(raw_input, password, iv) {
-    if (raw_input.constructor !== Uint8Array) raw_input = str2buf(raw_input);
+async function aes256ctr_encrypt(plaintext, password, iv) {
+    if (plaintext.constructor !== Uint8Array) plaintext = str2buf(plaintext);
 
-    var tag = await aes256ctr_tag(password, iv);
-    var key = await sha256(tag);
+    var tag = await aes256ctr_tag(plaintext, iv);
+    var key = await aes256ctr_key(password, iv);
 
-    var input = buf_concat([raw_input, tag]);
-    var output = await aes256ctr_crypt(input, key);
+    var input = buf_concat([plaintext, tag]);
+    var ciphertext = await aes256ctr_crypt(input, key);
 
-    return output;
+    return ciphertext;
 }
-async function aes256ctr_decrypt(input, password, iv) {
-    if (input.constructor !== Uint8Array) input = str2buf(input);
+async function aes256ctr_decrypt(ciphertext, password, iv) {
+    if (ciphertext.constructor !== Uint8Array) throw (new Error('bad $ciphertext type.'));
 
-    var tag = await aes256ctr_tag(password, iv);
-    var key = await sha256(tag);
+    var key = await aes256ctr_key(password, iv);
 
-    var output = await aes256ctr_crypt(input, key);
+    var output = await aes256ctr_crypt(ciphertext, key);
     if (output.length < 64) throw (new Error('bad $output.'));
 
-    var otag_point = output.length - 64;
-    if (otag_point < 0) throw (new Error('bad $otag_point.'));
+    var tag_point = output.length - 64;
+    if (tag_point < 0) throw (new Error('bad $tag_point.'));
 
-    var otag = output.slice(otag_point);
-    if (otag.length !== 64) throw (new Error('bad $otag.'));
+    var tag = output.slice(tag_point);
+    if (tag.length !== 64) throw (new Error('bad $tag.'));
 
-    if (!buf_equal(otag, tag)) throw (new Error('verify failed! $otag !== $tag.'));
-    output = output.slice(0, otag_point);
+    var plaintext = output.slice(0, tag_point);
+    var otag = await aes256ctr_tag(plaintext, iv);
 
-    return output;
+    if (!buf_equal(tag, otag)) throw (new Error('verify failed: $tag != $otag.'));
+    return plaintext;
 }
 
 function aes256ctr_test() {
@@ -789,8 +803,9 @@ async function _main(type) {
 
 {
     let ing = false;
-    var main = (async function(...args) {
-        if(ing)return;
+
+    var main = (async function (...args) {
+        if (ing) return;
         ing = true;
 
         try {
@@ -807,36 +822,9 @@ async function _main(type) {
 function test() {
     /* TEST START */
 
-    // var
-    var foo1 = 0;
-
-    // let
-    let foo2 = 0;
-
-    // while
-    while (0) { }
-
-    // do-while
-    do { } while (0);
-
-    // switch
-    switch (foo1) {
-        case 0:
-            break;
-        case 1:
-            break;
-        default:
-            break;
-    }
-
-    // for-in
-    for (let i in ['d', 'e', 'f']) { }
-
-    // for-of
-    for (let i of ['x', 'y', 'z']) { }
-
     // Uint8Array()
     {
+        Uint8Array.a;
         let tmp = (new Uint8Array());
         tmp[0] = 1;
         tmp[1] = 1;
@@ -847,6 +835,7 @@ function test() {
 
     // Set()
     {
+        Set.a;
         let tmp = (new Set());
         tmp.add(1);
         tmp.delete(2);
@@ -855,13 +844,17 @@ function test() {
         tmp.size;
     }
 
-    // encodeURI()
+    // Promise()
     {
-        let tmp = encodeURI('测试');
-        tmp = decodeURI(tmp);
+        Promise.a;
+        let tmp = (new Promise(() => { }));
+        tmp.a;
+    }
 
-        tmp = encodeURIComponent('你好');
-        tmp = decodeURIComponent(tmp);
+    // crypto
+    {
+        crypto; crypto.a;
+        crypto.subtle; crypto.subtle.a;
     }
 
     /* TEST SUCCESS */
@@ -870,9 +863,10 @@ function test() {
     document.getElementById(id).style.display = 'none';
 }
 
-var init = (() => {
-    var called = false;
-    return (() => {
+{
+    let called = false;
+
+    var init = (function () {
         if (called) return;
         called = true;
 
@@ -891,7 +885,7 @@ var init = (() => {
             alert(`${event.message}\n\n${event.error ? event.error.stack : ''}`);
         });
     });
-})();
+}
 inits.push(init);
 
 if (document) {
