@@ -226,12 +226,33 @@
         })();' />
         <hr />
 
-        <a href='javascript:undefined;' onclick='(function(){
-            var t;
+        <a href='javascript:undefined;' onclick='(async function(){
             var d = String(Math.random()).repeat(1000);
 
-            t = Date.now();window.sha256(d);t = (Date.now() - t);alert(`sha256() first: ${t} millisecond`);
-            t = Date.now();window.sha256(d);t = (Date.now() - t);alert(`sha256() two: ${t} millisecond`);
+            var a = async (name) => {
+                var f = eval(name);
+
+                var t1 = Date.now();
+                var o = await f(d);
+                var t2 = Date.now();
+
+                var t = t2 - t1;
+
+                o = buf2hex(o);
+                return `${name}(): ${t} millisecond. output: ${o}`;
+            };
+
+            var b = async (name) => {
+                var first = await a(name);
+                var two = await a(name);
+
+                alert("first: "+first);
+                alert("two: "+two);
+            }
+
+            await b("sha256");
+            await b("sha512");
+            await b("pbkdf2");
         })();'>Test Hash Time</a>
 
         <br />
