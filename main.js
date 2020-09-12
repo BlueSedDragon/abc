@@ -786,13 +786,22 @@ async function _main(type) {
     }
     set_output(output);
 }
-async function main(...args) {
-    try {
-        await _main(...args);
-    } catch (error) {
-        alert(`${String(error)}\n\n${error.stack}`);
-        throw error;
-    }
+
+{
+    let ing = false;
+    var main = (async function(...args) {
+        if(ing)return;
+        ing = true;
+
+        try {
+            await _main(...args);
+        } catch (error) {
+            alert(`${String(error)}\n\n${error.stack}`);
+            throw error;
+        } finally {
+            ing = false;
+        }
+    });
 }
 
 function test() {
