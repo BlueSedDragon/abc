@@ -455,10 +455,10 @@ function thuum_decode(input) {
     return output;
 }
 
-async function hash(mode, input) {
+async function hash(algo, input) {
     if (input.constructor !== Uint8Array) input = str2buf(input);
 
-    var output = await crypto.subtle.digest(mode, input);
+    var output = await crypto.subtle.digest(algo, input);
     output = (new Uint8Array(output));
     return output;
 }
@@ -470,6 +470,46 @@ async function sha512(input) {
 async function sha256(input) {
     var output = await hash('SHA-256', input);
     return output;
+}
+
+{
+    let iters = 3e6;
+
+    let cache = {};
+    let cache_index = (async function (input) {
+        var index = await sha512(input);
+        index = buf2hex(index).toLowerCase();
+        return index;
+    });
+
+    var pbkdf2 = (async function (input) {
+        if (input.constructor !== Uint8Array) input = str2buf(input);
+
+        var index = await cache_index(input);
+
+        var output = cache[index];
+        if (output) return output;
+
+        input = await sha512(input);
+        input = await crypto.subtle.importKey('raw', input.buffer, 'PBKDF2', false, ['deriveBits']);
+
+        output = await crypto.subtle.deriveBits({
+            name: 'PBKDF2',
+            salt: (new Uint8Array(0)),
+            iterations: iters,
+            hash: 'SHA-512'
+        }, input, 1024);
+        output = (new Uint8Array(output));
+
+        cache[index] = output;
+        return output;
+    });
+    var pbkdf2_found = (async function (input) {
+        var index = await cache_index(input);
+
+        if (cache[index]) return true;
+        return false;
+    });
 }
 
 var iv_length = null; // byte
@@ -547,14 +587,16 @@ function random(length) {
 async function aes256ctr_key(password, iv) {
     if (password.constructor !== Uint8Array) password = str2buf(password);
 
-    var tag = await aes256ctr_tag(password, iv);
+    var password_hash = await pbkdf2(password);
+
+    var tag = await aes256ctr_tag(password_hash, iv);
     var key = await sha256(tag);
 
     return key;
 }
 
 // tag length is 64 bytes (sha512) forever.
-// $data is plaintext or password.
+// $data is plaintext or password or any binary.
 async function aes256ctr_tag(data, iv) {
     if (data.constructor !== Uint8Array) throw (new Error('bad $data type.'));
 
@@ -628,13 +670,18 @@ function aes256ctr_test() {
     console.log('password:', password);
     console.log('iv:', iv);
 
-    aes256ctr_encrypt(plaintext, password, iv).then((encrypted) => {
-        console.log('encrypted:', encrypted);
-        aes256ctr_decrypt(encrypted, password, iv).then((decrypted) => {
+    aes256ctr_encrypt(plaintext, password, iv)
+        .then((encrypted) => {
+            console.log('encrypted:', encrypted);
+            return encrypted;
+        })
+        .then((encrypted) => {
+            return aes256ctr_decrypt(encrypted, password, iv);
+        })
+        .then((decrypted) => {
             decrypted = buf2str(decrypted);
             console.log('decrypted:', decrypted);
-        }).catch((err) => { throw err; });
-    }).catch((err) => { throw err; });
+        });
 }
 
 function mix_sentence(input) {
@@ -725,9 +772,15 @@ function get_iv_length() {
     return len;
 }
 
-function get_password() {
+async function get_password() {
     var id = 'crypt-password';
     var password = document.getElementById(id).value;
+
+    var found = await pbkdf2_found(password);
+    if (!found) {
+        alert('正在为此密码生成 Key，由于 PBKDF2 的关系，这可能需要 10 秒钟左右的时间。请耐心等待。\n生成的 Key 将会被存入缓存。因此，在当前会话下，相同的密码将不再需要重复执行此操作以节约时间。');
+    }
+
     return password;
 }
 
@@ -761,7 +814,7 @@ async function _main(type) {
                 case 'aes-256-ctr':
                     get_iv_length();
 
-                    let password = get_password();
+                    let password = await get_password();
                     let iv = generate_iv();
 
                     output = await aes256ctr_encrypt(output, password, iv);
@@ -780,7 +833,7 @@ async function _main(type) {
                 case 'aes-256-ctr':
                     get_iv_length();
 
-                    let password = get_password();
+                    let password = await get_password();
 
                     if (output.length < iv_length)
                         throw (new Error('bad $output length.'));
