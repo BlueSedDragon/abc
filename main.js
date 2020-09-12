@@ -783,6 +783,32 @@ async function get_password() {
 
     return password;
 }
+function password_check(password) {
+    if ((typeof password) !== 'string')
+        throw (new Error('bad $password type.'));
+
+    if (password.length < 10)
+        throw (new Error('$password length is < 10.'));
+
+    if (password.toLowerCase() === password)
+        throw (new Error('no uppercase character in $password.'));
+
+    if (password.toUpperCase() == password)
+        throw (new Error('no lowercase character in $password.'));
+
+    {
+        let have = false;
+        for (let it of password) {
+            if (Number.isSafeInteger(parseInt(it, 10))) {
+                have = true;
+                break;
+            }
+        }
+
+        if (!have)
+            throw (new Error('no number character in $password.'));
+    }
+}
 
 function get_input() {
     var id = 'io-input';
