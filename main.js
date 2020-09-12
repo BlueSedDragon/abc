@@ -783,7 +783,23 @@ async function get_password() {
 
     return password;
 }
+
 function password_check(password) {
+    var numbers = {};
+    for (let i = 0; i < 10; ++i) {
+        numbers[i] = i;
+    }
+
+    var letters = {};
+    {
+        let tmp = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.toUpperCase();
+        for (let i = 0, l = tmp.length; i < l; ++i) {
+            let it = tmp[i];
+            it = it.toUpperCase();
+            letters[it] = i;
+        }
+    }
+
     if ((typeof password) !== 'string')
         throw (new Error('bad $password type.'));
 
@@ -797,16 +813,63 @@ function password_check(password) {
         throw (new Error('no lowercase character in $password.'));
 
     {
-        let have = false;
+        let found = false;
         for (let it of password) {
-            if (Number.isSafeInteger(parseInt(it, 10))) {
-                have = true;
+            if (numbers[it]) {
+                found = true;
                 break;
             }
         }
 
-        if (!have)
-            throw (new Error('no number character in $password.'));
+        if (!found) throw (new Error('no number character in $password.'));
+    }
+
+    {
+        let found = false;
+        for (let it of password) {
+            it = it.toUpperCase();
+            if (letters[it]) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) throw (new Error('no alphabet character in $password.'));
+    }
+
+    for (let i = 0, l = password.length; i < l; ++i) {
+        let a = password[i];
+        if (!a) continue;
+
+        let b = password[i + 1];
+        if (!b) continue;
+
+        if (a.toLowerCase() == b.toLowerCase())
+            throw (new Error('repeated characters in $password.'));
+
+        do {
+            let an = numbers[a];
+            if ((!an) && an !== 0) break;
+
+            let bn = numbers[b];
+            if ((!bn) && bn !== 0) break;
+
+            if (an + 1 == bn || an - 1 == bn)
+                throw (new Error('a number order in $password.'));
+        } while (0);
+
+        do {
+            let al = a.toUpperCase();
+            al = letters[al];
+            if ((!al) && al !== 0) break;
+
+            let bl = b.toUpperCase();
+            bl = letters[bl];
+            if ((!bl) && bl !== 0) break;
+
+            if (al + 1 == bl || al - 1 == bl)
+                throw (new Error('a alphabet order in $password.'));
+        } while (0);
     }
 }
 
@@ -967,7 +1030,7 @@ function test() {
 }
 inits.push(init);
 
-if (document) {
+if ((typeof document) !== 'undefined') {
     let called = false;
     document.addEventListener('DOMContentLoaded', (event) => {
         if (called) return;
@@ -977,4 +1040,7 @@ if (document) {
             it();
         }
     });
+} else {
+    throw (new Error('$document is undefined. this script is can running at a browser only.'));
 }
+
