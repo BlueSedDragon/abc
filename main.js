@@ -863,7 +863,7 @@ function get_iv_length() {
     var get_password_check = (function () {
         var self = document.getElementById('crypt-password-check');
         if (first) {
-            document.getElementById('crypt-password-display-input').checked = false;
+            document.getElementById('crypt-password-display').checked = false;
             self.checked = true;
 
             first = false;
@@ -985,6 +985,8 @@ var password_check = true;
             if (!found) throw (new Error('no symbol character in $password.'));
         }
 
+        if (password.indexOf(' ') !== -1) throw (new Error('some space is in $password.'));
+
         for (let i = 0; i < len; ++i) {
             let a = password[i];
             if (!a) continue;
@@ -993,7 +995,7 @@ var password_check = true;
             if (!b) continue;
 
             if (a.toLowerCase() == b.toLowerCase())
-                throw (new Error(`some repeated characters (${a} ${b}) is in $password.`));
+                throw (new Error(`some repeated characters (${JSON.stringify(a)} ${JSON.stringify(b)}) is in $password.`));
 
             do {
                 let an = numbers[a];
@@ -1003,7 +1005,7 @@ var password_check = true;
                 if ((!bn) && bn !== 0) break;
 
                 if (an + 1 == bn || an - 1 == bn)
-                    throw (new Error(`a number order (${a} ${b}) is in $password.`));
+                    throw (new Error(`a number order (${JSON.stringify(a)} ${JSON.stringify(b)}) is in $password.`));
             } while (0);
 
             do {
@@ -1016,7 +1018,7 @@ var password_check = true;
                 if ((!bl) && bl !== 0) break;
 
                 if (al + 1 == bl || al - 1 == bl)
-                    throw (new Error(`a alphabet order (${a} ${b}) is in $password.`));
+                    throw (new Error(`a alphabet order (${JSON.stringify(a)} ${JSON.stringify(b)}) is in $password.`));
             } while (0);
         }
 
@@ -1028,7 +1030,7 @@ var password_check = true;
                     other.toLowerCase().indexOf(part.toLowerCase()) !== -1 &&
                     other !== part &&
                     (other.length > 1 && part.length > 1)
-                ) throw (new Error(`some repeated part (${part}) is in $password.`));
+                ) throw (new Error(`some repeated part (${JSON.stringify(part)}) is in $password.`));
             }
         }
     });
