@@ -540,6 +540,20 @@ function pow_decode(bin) {
     return n;
 }
 
+async function auto_iters(time) { // millisecond
+    var iters_min = 1e6;
+
+    if ((!Number.isSafeInteger(time)) || time < 0) throw (new Error('bad $time.'));
+    if (time === 0) return 0;
+
+    var data = random(1024);
+    var delay = await sha512_time(data);
+
+    var iters = time / delay;
+    if (iters < iters_min) iters = iters_min;
+    return iters;
+}
+
 {
     let iters = 3e6;
 
