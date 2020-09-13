@@ -949,8 +949,10 @@ var password_check = true;
 
         {
             let found = false;
+            let keys = (new Set(Object.keys(numbers)));
+
             for (let it of password) {
-                if (numbers[it]) {
+                if (keys.has(it)) {
                     found = true;
                     break;
                 }
@@ -961,10 +963,11 @@ var password_check = true;
 
         {
             let found = false;
+            let keys = (new Set(Object.keys(letters)));
+
             for (let it of password) {
                 it = it.toUpperCase();
-                it = letters[it];
-                if (it || it === 0) {
+                if (keys.has(it)) {
                     found = true;
                     break;
                 }
