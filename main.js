@@ -459,6 +459,33 @@ async function sha256(input) {
     return output;
 }
 
+async function hash_time(...args) {
+    var count = 1000;
+
+    var delays = [];
+    for (let i = 0; i < count; ++i) {
+        let start = Date.now();
+        await hash(...args);
+        let end = Date.now();
+
+        let delay = (end - start);
+        delays.push(delay);
+    }
+
+    var sum = 0;
+    for (let it of delays) {
+        sum += it;
+    }
+
+    var delay = sum / delays.length;
+    return delay;
+}
+
+async function sha512_time(input) {
+    var delay = await hash_time('SHA-512', input);
+    return delay;
+}
+
 {
     let iters = 3e6;
 
