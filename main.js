@@ -459,13 +459,13 @@ async function sha256(input) {
     return output;
 }
 
-async function hash_time(...args) {
+async function hash_time(algo, input) {
     var count = 1000;
 
     var delays = [];
     for (let i = 0; i < count; ++i) {
         let start = Date.now();
-        await hash(...args);
+        input = await hash(algo, input);
         let end = Date.now();
 
         let delay = (end - start);
@@ -478,6 +478,8 @@ async function hash_time(...args) {
     }
 
     var delay = sum / delays.length;
+    if (delay <= 0) delay = 0.001;
+
     return delay;
 }
 
