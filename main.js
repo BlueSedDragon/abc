@@ -486,6 +486,60 @@ async function sha512_time(input) {
     return delay;
 }
 
+function pow_encode(n) {
+    if ((!Number.isInteger(n)) || n < 0) throw (new Error('bad $n.'));
+
+    n = String(n);
+
+    var base = null;
+    var exp = null;
+
+    if (n.indexOf('e') === -1) {
+        base = Number(n[0]);
+        for (let it of n.slice(1)) {
+            if (it !== '0') {
+                base += 1;
+                break;
+            }
+        }
+
+        exp = n.length - 1;
+    } else {
+        let tmp = n.split('e');
+
+        let add = 0;
+        base = tmp[0];
+        if (base.indexOf('.') !== -1) {
+            base = base.split('.')[0];
+            add = 1;
+        }
+
+        base = Number(base);
+        base += add;
+
+        exp = tmp[1];
+        exp = exp.slice(1);
+        exp = Number(exp);
+    }
+
+    if (exp > 0xff) throw (new Error('$exp is cannot to encoding.'));
+
+    var bin = (new Uint8Array(2));
+    bin[0] = base;
+    bin[1] = exp;
+
+    return bin;
+}
+function pow_decode(bin) {
+    if (bin.constructor !== Uint8Array) throw (new Error('bad $bin type.'));
+
+    var base = bin[0];
+    var exp = bin[1];
+
+    var n = base * (10 ** exp);
+    return n;
+}
+
 {
     let iters = 3e6;
 
