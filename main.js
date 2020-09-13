@@ -8,11 +8,12 @@
 
 var inits = [];
 
-Array.prototype.random = function () {
-    return this[Math.floor(Math.random() * this.length)];
+function array_random(self) {
+    return self[Math.floor(Math.random() * self.length)];
 }
-Array.prototype.shuffle = function () {
-    var arr = [...(new Set(this))];
+
+function array_shuffle(self) {
+    var arr = [...(new Set(self))];
     var narr = (new Set());
 
     var arrlen = arr.length;
@@ -22,6 +23,21 @@ Array.prototype.shuffle = function () {
 
     return [...narr];
 }
+
+function string_replaceAll(self, from, to) {
+    let string = String(self);
+    if (Array.isArray(from)) {
+        for (let i of from) {
+            while (string.indexOf(i) !== -1)
+                string = string.replace(i, to);
+        }
+    } else {
+        if ((typeof from) !== 'string') from = String(from);
+        while (string.indexOf(from) !== -1)
+            string = string.replace(from, to);
+    }
+    return string;
+};
 
 var base = null;
 var base_auto = true;
@@ -64,43 +80,6 @@ function char_test(blacklist) { // 用于进行屏蔽词测试。输入屏蔽词
         if (found) hint.push(word);
     }
     return hint;
-}
-
-// rust range: min..=max
-function integer_random(min, max) {
-    if (!Number.isSafeInteger(min)) throw (new Error('bad $min type.'));
-    if (!Number.isSafeInteger(max)) throw (new Error('bad $max type.'));
-
-    if (min === max) return min;
-
-    if (
-        (min < 0 || max < 0) ||
-        min > max
-    ) throw (new Error('bad range!'));
-
-    var result = null;
-
-    var _max = max + 1;
-    do {
-        result = Math.floor(Math.random() * _max);
-    } while (result < min || result > max);
-
-    return result;
-}
-
-function char_random() {
-    var result = null;
-
-    do {
-        result = integer_random(0x4e00, 0x9fa5);
-
-        result = result.toString(16);
-        if ((result.length % 2) !== 0) result = '0' + result;
-
-        result = `"\\u${result}"`;
-        result = JSON.parse(result);
-    } while (result.length !== 1);
-    return result;
 }
 
 {
@@ -153,7 +132,7 @@ function table_update(data) {
     display_update();
 }
 function table_random() {
-    table_update(char.shuffle());
+    table_update(array_shuffle(char));
 }
 
 function display_update() {
@@ -220,6 +199,14 @@ function char2table(char) {
     return new_table;
 }
 
+function buf_clone(buf) {
+    if (buf.constructor !== Uint8Array) throw (new Error('bad $buf type.'));
+
+    var result = (new Uint8Array(buf.length));
+    result.set(buf, 0);
+
+    return result;
+}
 function buf_concat(bufs) {
     if (!Array.isArray(bufs)) throw (new Error('bad $bufs type.'));
 
@@ -334,8 +321,8 @@ function thuum_base16_encode(input) {
         let a = parseInt(hex[0], 16); // 1 of 2
         let b = parseInt(hex[1], 16); // 2 of 2
 
-        a = table[a].random();
-        b = table[b].random();
+        a = array_random(table[a]);
+        b = array_random(table[b]);
 
         let c = a + b;
         output.push(c);
@@ -394,7 +381,7 @@ function thuum_base256_encode(input) {
 
     var output = [];
     for (let i of input) {
-        let ii = table[i].random();
+        let ii = array_random(table[i]);
         output.push(ii);
     }
     output = output.join('');
@@ -486,28 +473,39 @@ async function sha256(input) {
         if (input.constructor !== Uint8Array) input = str2buf(input);
 
         var index = await cache_index(input);
-
         var output = cache[index];
-        if (output) return output;
 
-        input = await sha512(input);
-        input = await crypto.subtle.importKey('raw', input.buffer, 'PBKDF2', false, ['deriveBits']);
+        if (output) {
+            if (output === -1) throw (new Error('please retry at later.'));
+            return buf_clone(output);
+        }
 
-        output = await crypto.subtle.deriveBits({
-            name: 'PBKDF2',
-            salt: (new Uint8Array(0)),
-            iterations: iters,
-            hash: 'SHA-512'
-        }, input, 1024);
-        output = (new Uint8Array(output));
+        cache[index] = -1;
+        {
+            let input_hash = await sha512(input);
+            input_hash = await crypto.subtle.importKey('raw', input_hash.buffer, 'PBKDF2', false, ['deriveBits']);
 
+            output = await crypto.subtle.deriveBits({
+                name: 'PBKDF2',
+                salt: (new Uint8Array(0)),
+                iterations: iters,
+                hash: 'SHA-512'
+            }, input_hash, 1024);
+            output = (new Uint8Array(output));
+        }
         cache[index] = output;
-        return output;
+
+        return (await pbkdf2(input));
     });
     var pbkdf2_found = (async function (input) {
         var index = await cache_index(input);
+        var value = cache[index];
 
-        if (cache[index]) return true;
+        if (value) {
+            if (value === -1) return null;
+            return true;
+        }
+
         return false;
     });
 }
@@ -562,6 +560,97 @@ function random(length) {
 
     return result;
 }
+
+function random_text(length) {
+    if ((!Number.isSafeInteger(length)) || length < 0) throw (new Error('bad $length.'));
+    if (length === 0) return '';
+
+    var result = [];
+    for (let i = 0; i < length; ++i) {
+        let abc = null;
+        do {
+            abc = random(1);
+        } while (abc[0] < 0x20 || abc[0] > 0x7e);
+
+        abc = buf2str(abc);
+        abc = abc[0];
+
+        result.push(abc);
+    }
+    result = result.join('');
+
+    return result;
+}
+
+function random_password(length) {
+    var result = null;
+
+    var count = 1000;
+    while (1) {
+        result = random_text(length);
+
+        result = string_replaceAll(result, [
+            ' ',
+            '\'',
+            '"',
+            '`',
+            '%',
+            '/',
+            '\\'
+        ], '');
+
+        try {
+            password_checker(result);
+        } catch (err) {
+            count -= 1;
+            if (count < 0) throw err;
+
+            continue;
+        }
+
+        break;
+    }
+
+    return result;
+}
+
+// rust range: min..=max
+function urandom_integer(min, max) {
+    if (!Number.isSafeInteger(min)) throw (new Error('bad $min type.'));
+    if (!Number.isSafeInteger(max)) throw (new Error('bad $max type.'));
+
+    if (min === max) return min;
+
+    if (
+        (min < 0 || max < 0) ||
+        min > max
+    ) throw (new Error('bad range!'));
+
+    var result = null;
+
+    var _max = max + 1;
+    do {
+        result = Math.floor(Math.random() * _max);
+    } while (result < min || result > max);
+
+    return result;
+}
+
+function urandom_char() {
+    var result = null;
+
+    do {
+        result = urandom_integer(0x4e00, 0x9fa5);
+
+        result = result.toString(16);
+        if ((result.length % 2) !== 0) result = '0' + result;
+
+        result = `"\\u${result}"`;
+        result = JSON.parse(result);
+    } while (result.length !== 1);
+    return result;
+}
+
 
 {
     let list = (new Set());
@@ -673,9 +762,6 @@ function aes256ctr_test() {
     aes256ctr_encrypt(plaintext, password, iv)
         .then((encrypted) => {
             console.log('encrypted:', encrypted);
-            return encrypted;
-        })
-        .then((encrypted) => {
             return aes256ctr_decrypt(encrypted, password, iv);
         })
         .then((decrypted) => {
@@ -772,9 +858,50 @@ function get_iv_length() {
     return len;
 }
 
+{
+    let first = true;
+    var get_password_check = (function () {
+        var self = document.getElementById('crypt-password-check');
+        if (first) {
+            document.getElementById('crypt-password-display-input').checked = false;
+            self.checked = true;
+
+            first = false;
+        }
+
+        if (password_check && (!self.checked)) {
+            let yes = confirm('确定要关闭密码强度检查吗？\n关闭密码强度检查后将无法防止弱密码的使用，弱密码将会对加密的安全性构成威胁。');
+            if (!yes) self.click();
+        }
+
+        var checked = self.checked;
+        password_check = checked;
+        return checked;
+    });
+}
+
 async function get_password() {
-    var id = 'crypt-password';
-    var password = document.getElementById(id).value;
+    var password = document.getElementById('crypt-password').value;
+
+    get_password_check();
+
+    var password_hint = document.getElementById('crypt-password-hint')
+    {
+        let error = null;
+
+        try {
+            password_checker(password);
+        } catch (err) {
+            error = err;
+        }
+
+        if (error) {
+            password_hint.style.display = 'inline';
+            if (password_check) throw error;
+        } else {
+            password_hint.style.display = 'none';
+        }
+    }
 
     var found = await pbkdf2_found(password);
     if (!found) {
@@ -784,13 +911,14 @@ async function get_password() {
     return password;
 }
 
-function password_check(password) {
-    var numbers = {};
+var password_check = true;
+{
+    let numbers = {};
     for (let i = 0; i < 10; ++i) {
         numbers[i] = i;
     }
 
-    var letters = {};
+    let letters = {};
     {
         let tmp = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.toUpperCase();
         for (let i = 0, l = tmp.length; i < l; ++i) {
@@ -800,77 +928,110 @@ function password_check(password) {
         }
     }
 
-    if ((typeof password) !== 'string')
-        throw (new Error('bad $password type.'));
+    let symbols = '~`!@#$%^&*()-_=+[{]}\\|;:\'",<.>/?'.toUpperCase();
+    symbols = symbols.split('');
+    symbols = (new Set(symbols));
 
-    if (password.length < 10)
-        throw (new Error('$password length is < 10.'));
+    var password_checker = (function (password) {
+        var len = password.length;
 
-    if (password.toLowerCase() === password)
-        throw (new Error('no uppercase character in $password.'));
+        if ((typeof password) !== 'string')
+            throw (new Error('bad $password type.'));
 
-    if (password.toUpperCase() == password)
-        throw (new Error('no lowercase character in $password.'));
+        if (password.length < 10)
+            throw (new Error('$password length is < 10.'));
 
-    {
-        let found = false;
-        for (let it of password) {
-            if (numbers[it]) {
-                found = true;
-                break;
+        if (password.toLowerCase() === password)
+            throw (new Error('no uppercase character in $password.'));
+
+        if (password.toUpperCase() == password)
+            throw (new Error('no lowercase character in $password.'));
+
+        {
+            let found = false;
+            for (let it of password) {
+                if (numbers[it]) {
+                    found = true;
+                    break;
+                }
             }
+
+            if (!found) throw (new Error('no number character in $password.'));
         }
 
-        if (!found) throw (new Error('no number character in $password.'));
-    }
-
-    {
-        let found = false;
-        for (let it of password) {
-            it = it.toUpperCase();
-            if (letters[it]) {
-                found = true;
-                break;
+        {
+            let found = false;
+            for (let it of password) {
+                it = it.toUpperCase();
+                if (letters[it]) {
+                    found = true;
+                    break;
+                }
             }
+
+            if (!found) throw (new Error('no alphabet character in $password.'));
         }
 
-        if (!found) throw (new Error('no alphabet character in $password.'));
-    }
+        {
+            let found = false;
+            for (let it of password) {
+                it = it.toUpperCase();
+                if (symbols.has(it)) {
+                    found = true;
+                    break;
+                }
+            }
 
-    for (let i = 0, l = password.length; i < l; ++i) {
-        let a = password[i];
-        if (!a) continue;
+            if (!found) throw (new Error('no symbol character in $password.'));
+        }
 
-        let b = password[i + 1];
-        if (!b) continue;
+        for (let i = 0; i < len; ++i) {
+            let a = password[i];
+            if (!a) continue;
 
-        if (a.toLowerCase() == b.toLowerCase())
-            throw (new Error('repeated characters in $password.'));
+            let b = password[i + 1];
+            if (!b) continue;
 
-        do {
-            let an = numbers[a];
-            if ((!an) && an !== 0) break;
+            if (a.toLowerCase() == b.toLowerCase())
+                throw (new Error(`some repeated characters (${a} ${b}) is in $password.`));
 
-            let bn = numbers[b];
-            if ((!bn) && bn !== 0) break;
+            do {
+                let an = numbers[a];
+                if ((!an) && an !== 0) break;
 
-            if (an + 1 == bn || an - 1 == bn)
-                throw (new Error('a number order in $password.'));
-        } while (0);
+                let bn = numbers[b];
+                if ((!bn) && bn !== 0) break;
 
-        do {
-            let al = a.toUpperCase();
-            al = letters[al];
-            if ((!al) && al !== 0) break;
+                if (an + 1 == bn || an - 1 == bn)
+                    throw (new Error(`a number order (${a} ${b}) is in $password.`));
+            } while (0);
 
-            let bl = b.toUpperCase();
-            bl = letters[bl];
-            if ((!bl) && bl !== 0) break;
+            do {
+                let al = a.toUpperCase();
+                al = letters[al];
+                if ((!al) && al !== 0) break;
 
-            if (al + 1 == bl || al - 1 == bl)
-                throw (new Error('a alphabet order in $password.'));
-        } while (0);
-    }
+                let bl = b.toUpperCase();
+                bl = letters[bl];
+                if ((!bl) && bl !== 0) break;
+
+                if (al + 1 == bl || al - 1 == bl)
+                    throw (new Error(`a alphabet order (${a} ${b}) is in $password.`));
+            } while (0);
+        }
+
+        for (let a = 0; a < len; ++a) {
+            for (let b = 0; b < len; ++b) {
+                let part = password.slice(a, b);
+                let other = password.slice(0, a) + password.slice(b);
+                if (
+                    other.toLowerCase().indexOf(part.toLowerCase()) !== -1 &&
+                    other !== part &&
+                    (other.length > 1 && part.length > 1)
+                ) throw (new Error(`some repeated part (${part}) is in $password.`));
+            }
+        }
+    });
 }
 
 function get_input() {
@@ -1016,6 +1177,7 @@ function test() {
 
         test();
 
+        get_password_check();
         get_iv_length();
 
         base_get();

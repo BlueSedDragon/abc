@@ -195,7 +195,28 @@
         </select><br />
 
         <div id='crypt-option'>
-            加密密码：<input id='crypt-password' type='password' /><br /><br />
+            <br />
+            加密密码（<a href='javascript:undefined;' onclick='(() => {
+                var self = document.getElementById("crypt-password");
+
+                var length = urandom_integer(10, 18);
+                var password = random_password(length);
+
+                self.value = password;
+            })();'>随机生成</a>）：<input id='crypt-password' type='password' /><span id='crypt-password-hint'
+                style='color:red;display:none;'>（注意：此密码的强度不够，可能是弱密码。）</span><br />
+            密码强度检查 <input id='crypt-password-check' type='checkbox' checked='true'
+                onchange='get_password_check();' /><br />
+            <span id='crypt-password-display'>
+                显示密码 <input id='crypt-password-display-input' type='checkbox' checked='false' onchange='(() => {
+                    var self = document.getElementById("crypt-password-display-input");
+
+                    var obj = document.getElementById("crypt-password");
+                    if(self.checked) obj.type = "text";
+                    else obj.type = "password";
+                })();' /><br />
+            </span>
+            <br />
 
             IV 长度（范围：<span id='crypt-iv-range'>N/A</span>）：
             <input id='crypt-iv-length' type='text' value='128' /> 字节
