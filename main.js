@@ -570,7 +570,7 @@ function random_text(length) {
         let abc = null;
         do {
             abc = random(1);
-        } while (abc[0] < 0x20 || abc[0] > 0x7e);
+        } while (abc[0] < 0x20 || abc[0] > 0x7e); // rust range: 0x20..=0x7e (ASCII)
 
         abc = buf2str(abc);
         abc = abc[0];
