@@ -18,7 +18,7 @@ function array_shuffle(self) {
 
     var arrlen = arr.length;
     while (narr.size < arrlen) {
-        narr.add(arr.random());
+        narr.add(array_random(arr));
     }
 
     return [...narr];
@@ -825,11 +825,11 @@ function mix_poesy(input, fill) {
         let second = input.slice(0, jump);
         input = input.slice(jump);
 
-        while (first.length < jump) first += fill.random();
+        while (first.length < jump) first += array_random(fill);
         output.push(first);
         output.push(half);
 
-        while (second.length < jump) second += fill.random();
+        while (second.length < jump) second += array_random(fill);
         output.push(second);
         output.push(dot);
 
