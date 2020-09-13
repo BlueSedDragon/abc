@@ -963,7 +963,8 @@ var password_check = true;
             let found = false;
             for (let it of password) {
                 it = it.toUpperCase();
-                if (letters[it]) {
+                it = letters[it];
+                if (it || it === 0) {
                     found = true;
                     break;
                 }
