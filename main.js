@@ -885,7 +885,7 @@ async function get_password() {
 
     get_password_check();
 
-    var password_hint = document.getElementById('crypt-password-hint')
+    var password_hint = document.getElementById('crypt-password-hint');
     {
         let error = null;
 
