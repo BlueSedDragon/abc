@@ -624,7 +624,7 @@ async function auto_iters(time) { // millisecond
         }
 
         cache[index] = -1;
-        {
+        try {
             let input_hash = await sha512(input);
             input_hash = await crypto.subtle.importKey('raw', input_hash.buffer, 'PBKDF2', false, ['deriveBits']);
 
@@ -635,6 +635,9 @@ async function auto_iters(time) { // millisecond
                 hash: 'SHA-512'
             }, input_hash, 1024);
             output = (new Uint8Array(output));
+        } catch (error) {
+            cache[index] = undefined;
+            throw error;
         }
         cache[index] = output;
 
@@ -1066,13 +1069,6 @@ async function get_password() {
         }
     }
 
-    var iters = await get_iters();
-    var found = await pbkdf2_found(password, iters);
-
-    if (!found) {
-        alert('正在为此密码生成 Key，由于 PBKDF2 的关系，这可能需要 10 秒钟左右的时间。请耐心等待。\n生成的 Key 将会被存入缓存。因此，在当前会话下，相同的密码将不再需要重复执行此操作以节约时间。');
-    }
-
     return password;
 }
 
@@ -1266,6 +1262,15 @@ async function _main(type) {
 
                     let password = await get_password();
                     let iv = generate_iv();
+
+                    {
+                        let iters = await get_iters();
+                        let found = await pbkdf2_found(password, iters);
+
+                        if (!found) {
+                            alert(`正在为此密码生成 Key，由于 PBKDF2 的关系，这可能需要 10 秒钟左右的时间。请耐心等待 (iterations: ${iters}) 。\n生成的 Key 将会被存入缓存。因此，如果密码 和 iterations 相同，将不再需要重复执行此操作以节约时间（直到当前会话结束）。`);
+                        }
+                    }
 
                     output = await aes256ctr_encrypt(output, password, iv);
                     output = buf_concat([iv, output]);
