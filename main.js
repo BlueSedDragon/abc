@@ -1278,7 +1278,7 @@ async function _main(type) {
 
                     {
                         let iters = await get_iters();
-                        pbkdf2_hint(password, iters);
+                        await pbkdf2_hint(password, iters);
                     }
 
                     output = await aes256ctr_encrypt(output, password, iv);
@@ -1310,7 +1310,7 @@ async function _main(type) {
                         iters = await iters_crypt(iters, iv);
                         iters = pow_decode(iters);
 
-                        pbkdf2_hint(password, iters);
+                        await pbkdf2_hint(password, iters);
                     }
 
                     output = await aes256ctr_decrypt(output, password, iv);
