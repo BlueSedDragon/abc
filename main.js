@@ -1146,6 +1146,31 @@ function set_output(data) {
     document.getElementById(id).value = data;
 }
 
+function set_status(status) {
+    status = status.toLowerCase();
+
+    var self = document.getElementById('io-status');
+    switch (status) {
+        case 'idle':
+            self.innerHTML = 'idle';
+            self.style.color = 'black';
+            break;
+
+        case 'working':
+            self.innerHTML = 'working';
+            self.style.color = 'oragle';
+            break;
+
+        case 'done':
+            self.innerHTML = 'done';
+            self.style.color = 'green';
+            break;
+
+        default:
+            throw (new Error('bad $status.'));
+    }
+}
+
 async function _main(type) {
     if (!Number.isSafeInteger(type)) throw (new Error('bad $type type.'));
 
@@ -1212,15 +1237,25 @@ async function _main(type) {
 
     var main = (async function (...args) {
         if (ing) return;
-        ing = true;
 
+        ing = true;
+        set_status('working');
+
+        var error = null;
         try {
             await _main(...args);
-        } catch (error) {
-            alert(`${String(error)}\n\n${error.stack}`);
-            throw error;
+        } catch (err) {
+            alert(`${String(err)}\n\n${err.stack}`);
+            error = err;
         } finally {
             ing = false;
+        }
+
+        if (error) {
+            set_status('idle');
+            throw error;
+        } else {
+            set_status('done');
         }
     });
 }
