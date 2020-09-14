@@ -305,7 +305,7 @@
                 var f = eval(name);
 
                 if(name === "pbkdf2" && i === undefined) {
-                    i = await auto_iters(10 * 1000);
+                    i = await get_iters();
                     alert(`pbkdf2 iters: ${i}`);
                 }
 

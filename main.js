@@ -462,8 +462,8 @@ async function sha256(input) {
 async function hash_time(func) {
     if ((typeof func) !== 'function') throw (new Error('bad $func type.'));
 
-    var count_total = 100;
-    var count_single = 1;
+    var count_total = 10;
+    var count_single = 10;
 
     var data = random(1024);
     var delays = [];
@@ -499,7 +499,7 @@ async function pbkdf2_time(iters) {
 }
 
 function pow_encode(n) {
-    if ((!Number.isInteger(n)) || n < 0) throw (new Error('bad $n.'));
+    if ((!Number.isSafeInteger(n)) || n < 0) throw (new Error('bad $n.'));
 
     n = String(n);
 
@@ -555,12 +555,10 @@ function pow_decode(bin) {
 }
 
 async function auto_iters(time) { // millisecond
-    var iters_min = 1e6;
-    iters_min = 0;//test...
-
     if ((!Number.isSafeInteger(time)) || time < 0) throw (new Error('bad $time.'));
     if (time === 0) return 0;
 
+    var iters_min = 1e6;
     var single = 1000;
 
     var delay = await pbkdf2_time(single);
@@ -568,17 +566,37 @@ async function auto_iters(time) { // millisecond
 
     var iters = (time / delay);
     iters = Math.floor(iters + 1);
-
-    iters = pow_encode(iters);
-    iters = pow_decode(iters);
-
     if (iters < iters_min) iters = iters_min + iters;
+
+    do {
+        try {
+            iters = pow_encode(iters);
+        } catch (err) {
+            iters /= 10;
+            console.error(err);
+            continue;
+        }
+
+        break;
+    } while (1);
+
+    iters = pow_decode(iters);
     return iters;
 }
 
 {
-    //let iters = 3e6;
+    let time = 10 * 1000;
+    let iters = null;
 
+    var get_iters = (async function () {
+        if (iters) return iters;
+
+        iters = await auto_iters(time);
+        return (await get_iters());
+    });
+}
+
+{
     let cache = {};
     let cache_index = (async function (input, iters) {
         var input_hash = await sha512(input);
