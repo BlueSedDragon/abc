@@ -1223,7 +1223,7 @@ function set_output(data) {
     document.getElementById(id).value = data;
 }
 
-function set_status(status) {
+async function set_status(status) {
     status = status.toLowerCase();
 
     var self = document.getElementById('io-status');
@@ -1251,6 +1251,16 @@ function set_status(status) {
         default:
             throw (new Error('bad $status.'));
     }
+
+    await later(100);
+}
+
+function later(time) {
+    return (new Promise((resolve, reject) => {
+        setTimeout(() => {
+            resolve();
+        }, time);
+    }));
 }
 
 async function _main(type) {
@@ -1287,10 +1297,12 @@ async function _main(type) {
                 default:
                     break;
             }
+
             output = mix(thuum_encode(output));
             break;
         case 1: // decode
             output = thuum_decode(input);
+
             switch (crypt_mode) {
                 case 'none':
                     break;
@@ -1333,7 +1345,7 @@ async function _main(type) {
         if (ing) return;
 
         ing = true;
-        set_status('working');
+        await set_status('working');
 
         var error = null;
         try {
@@ -1346,10 +1358,10 @@ async function _main(type) {
         }
 
         if (error) {
-            set_status('failed');
+            await set_status('failed');
             throw error;
         } else {
-            set_status('done');
+            await set_status('done');
         }
     });
 }
