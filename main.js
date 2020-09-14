@@ -656,6 +656,14 @@ async function auto_iters(time) { // millisecond
     });
 }
 
+async function pbkdf2_hint(password, iters) {
+    var found = await pbkdf2_found(password, iters);
+
+    if (!found) {
+        alert(`正在为此密码生成 Key，由于 PBKDF2 的关系，这可能需要 10 秒钟左右的时间。请耐心等待 (iterations: ${iters}) 。\n生成的 Key 将会被存入缓存。因此，如果密码 和 iterations 相同，将不再需要重复执行此操作以节约时间（直到当前会话结束）。`);
+    }
+}
+
 var iv_length = null; // byte
 {
     // rust range: length_min..=length_max
@@ -862,6 +870,17 @@ async function aes256ctr_crypt(input, raw_key) {
 
     return output;
 }
+async function iters_crypt(iters, iv) {
+    if (iters.constructor !== Uint8Array) throw (new Error('bad $iters type.'));
+    if (iters.length !== 2) throw (new Error('bad $iters length.'));
+
+    if (iv.constructor !== Uint8Array) throw (new Error('bad $iv type.'));
+    if (iv.length !== iv_length) throw (new Error('bad $iv length.'));
+
+    var key = await sha256(iv);
+    var output = await aes256ctr_crypt(iters, key);
+    return output;
+}
 
 async function aes256ctr_encrypt(plaintext, password, iv) {
     if (plaintext.constructor !== Uint8Array) plaintext = str2buf(plaintext);
@@ -874,12 +893,9 @@ async function aes256ctr_encrypt(plaintext, password, iv) {
     var input = buf_concat([plaintext, tag]);
     var ciphertext = await aes256ctr_crypt(input, key);
 
-    {
-        let iters_key = await sha256(iv);
+    iters = pow_encode(iters);
+    iters = await iters_crypt(iters, iv);
 
-        iters = pow_encode(iters);
-        iters = await aes256ctr_crypt(iters, iters_key);
-    }
     var encrypted = buf_concat([iters, ciphertext]);
 
     return encrypted;
@@ -890,12 +906,9 @@ async function aes256ctr_decrypt(encrypted, password, iv) {
     var iters = encrypted.slice(0, 2);
     if (iters.length !== 2) throw (new Error('bad $iters.'));
 
-    {
-        let iters_key = await sha256(iv);
+    iters = await iters_crypt(iters, iv);
+    iters = pow_decode(iters);
 
-        iters = await aes256ctr_crypt(iters, iters_key);
-        iters = pow_decode(iters);
-    }
     var key = await aes256ctr_key(password, iv, iters);
 
     var ciphertext = encrypted.slice(2);
@@ -1265,11 +1278,7 @@ async function _main(type) {
 
                     {
                         let iters = await get_iters();
-                        let found = await pbkdf2_found(password, iters);
-
-                        if (!found) {
-                            alert(`正在为此密码生成 Key，由于 PBKDF2 的关系，这可能需要 10 秒钟左右的时间。请耐心等待 (iterations: ${iters}) 。\n生成的 Key 将会被存入缓存。因此，如果密码 和 iterations 相同，将不再需要重复执行此操作以节约时间（直到当前会话结束）。`);
-                        }
+                        pbkdf2_hint(password, iters);
                     }
 
                     output = await aes256ctr_encrypt(output, password, iv);
@@ -1295,6 +1304,14 @@ async function _main(type) {
 
                     let iv = output.slice(0, iv_length);
                     output = output.slice(iv_length);
+
+                    {
+                        let iters = output.slice(0, 2);
+                        iters = await iters_crypt(iters, iv);
+                        iters = pow_decode(iters);
+
+                        pbkdf2_hint(password, iters);
+                    }
 
                     output = await aes256ctr_decrypt(output, password, iv);
                     break;
