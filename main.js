@@ -1158,7 +1158,7 @@ function set_status(status) {
 
         case 'working':
             self.innerHTML = 'working';
-            self.style.color = 'oragle';
+            self.style.color = 'yellow';
             break;
 
         case 'done':
