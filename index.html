@@ -265,14 +265,13 @@
             输入：
             <textarea id='io-input' style='width:100%;height:35vh;font-size:xx-large;'></textarea>
 
+            <span style='font-size:xx-large;'>
+                Status: <span id='io-status' style='color:gray;'>idle</span>
+            </span>
+            <br />
             <span>
                 <input style='font-size:xx-large;' type='button' value='编码' onclick='main(0);' />
                 <input style='font-size:xx-large;' type='button' value='解码' onclick='main(1);' />
-            </span>
-
-            <span>
-                Status:
-                <span id='io-status'>idle</span>
             </span>
         </div>
 
@@ -300,12 +299,18 @@
 
         <a href='javascript:undefined;' onclick='(async function(){
             var d = String(Math.random()).repeat(1000);
+            var i = undefined;
 
             var a = async (name) => {
                 var f = eval(name);
 
+                if(name === "pbkdf2" && i === undefined) {
+                    i = await auto_iters(10 * 1000);
+                    alert(`pbkdf2 iters: ${i}`);
+                }
+
                 var t1 = Date.now();
-                var o = await f(d);
+                var o = await f(d, i);
                 var t2 = Date.now();
 
                 var t = t2 - t1;
@@ -316,9 +321,9 @@
 
             var b = async (name) => {
                 var first = await a(name);
-                var two = await a(name);
-
                 alert("first: "+first);
+
+                var two = await a(name);
                 alert("two: "+two);
             }
 

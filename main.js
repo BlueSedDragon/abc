@@ -459,16 +459,22 @@ async function sha256(input) {
     return output;
 }
 
-async function hash_time(algo, input) {
-    var count = 1000;
+async function hash_time(func) {
+    if ((typeof func) !== 'function') throw (new Error('bad $func type.'));
 
+    var count_total = 100;
+    var count_single = 1;
+
+    var data = random(1024);
     var delays = [];
-    for (let i = 0; i < count; ++i) {
+    for (let i = 0; i < count_total; ++i) {
         let start = Date.now();
-        input = await hash(algo, input);
+        for (let ii = 0; ii < count_single; ++ii) {
+            data = await func(data);
+        }
         let end = Date.now();
 
-        let delay = (end - start);
+        let delay = (end - start) / count_single;
         delays.push(delay);
     }
 
@@ -483,8 +489,12 @@ async function hash_time(algo, input) {
     return delay;
 }
 
-async function sha512_time(input) {
-    var delay = await hash_time('SHA-512', input);
+async function sha512_time() {
+    var delay = await hash_time((input) => sha512(input));
+    return delay;
+}
+async function pbkdf2_time(iters) {
+    var delay = await hash_time((input) => pbkdf2(input, iters));
     return delay;
 }
 
@@ -538,38 +548,54 @@ function pow_decode(bin) {
     var base = bin[0];
     var exp = bin[1];
 
-    var n = base * (10 ** exp);
+    //var n = base * (10 ** exp);
+    var n = JSON.parse(`${base}e${exp}`);
+
     return n;
 }
 
 async function auto_iters(time) { // millisecond
     var iters_min = 1e6;
+    iters_min = 0;//test...
 
     if ((!Number.isSafeInteger(time)) || time < 0) throw (new Error('bad $time.'));
     if (time === 0) return 0;
 
-    var data = random(1024);
-    var delay = await sha512_time(data);
+    var single = 1000;
 
-    var iters = time / delay;
-    if (iters < iters_min) iters = iters_min;
+    var delay = await pbkdf2_time(single);
+    delay /= single;
+
+    var iters = (time / delay);
+    iters = Math.floor(iters + 1);
+
+    iters = pow_encode(iters);
+    iters = pow_decode(iters);
+
+    if (iters < iters_min) iters = iters_min + iters;
     return iters;
 }
 
 {
-    let iters = 3e6;
+    //let iters = 3e6;
 
     let cache = {};
-    let cache_index = (async function (input) {
-        var index = await sha512(input);
+    let cache_index = (async function (input, iters) {
+        var input_hash = await sha512(input);
+        var iters_hash = await sha512(str2buf(String(iters)));
+
+        var pre_index = buf_concat([input_hash, iters_hash]);
+        var index = await sha512(pre_index);
+
         index = buf2hex(index).toLowerCase();
         return index;
     });
 
-    var pbkdf2 = (async function (input) {
+    var pbkdf2 = (async function (input, iters) {
+        if ((!Number.isSafeInteger(iters)) || iters <= 0) throw (new Error('bad $iters.'));
         if (input.constructor !== Uint8Array) input = str2buf(input);
 
-        var index = await cache_index(input);
+        var index = await cache_index(input, iters);
         var output = cache[index];
 
         if (output) {
@@ -592,10 +618,10 @@ async function auto_iters(time) { // millisecond
         }
         cache[index] = output;
 
-        return (await pbkdf2(input));
+        return (await pbkdf2(input, iters));
     });
-    var pbkdf2_found = (async function (input) {
-        var index = await cache_index(input);
+    var pbkdf2_found = (async function (...args) {
+        var index = await cache_index(...args);
         var value = cache[index];
 
         if (value) {
@@ -1153,17 +1179,22 @@ function set_status(status) {
     switch (status) {
         case 'idle':
             self.innerHTML = 'idle';
-            self.style.color = 'black';
+            self.style.color = 'gray';
             break;
 
         case 'working':
             self.innerHTML = 'working';
-            self.style.color = 'yellow';
+            self.style.color = 'orange';
             break;
 
         case 'done':
             self.innerHTML = 'done';
             self.style.color = 'green';
+            break;
+
+        case 'error':
+            self.innerHTML = 'error';
+            self.style.color = 'red';
             break;
 
         default:
@@ -1175,8 +1206,7 @@ async function _main(type) {
     if (!Number.isSafeInteger(type)) throw (new Error('bad $type type.'));
 
     if (char.length < base) {
-        alert('字符集不全！需要生成字符集后才能使用。');
-        return;
+        throw (new Error('字符集不全！需要生成字符集后才能使用。'));
     }
 
     var crypt_mode = get_crypt_mode();
@@ -1252,7 +1282,7 @@ async function _main(type) {
         }
 
         if (error) {
-            set_status('idle');
+            set_status('error');
             throw error;
         } else {
             set_status('done');
