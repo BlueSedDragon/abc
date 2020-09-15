@@ -6,12 +6,12 @@
 
 <!DOCTYPE HTML>
 
-<html>
+<html lang=''>
 
 <head>
     <title>ABColor</title>
     <meta charset='utf-8' />
-    <script type='text/javascript' src='./main.js'></script>
+    <script src='./main.js'></script>
 </head>
 
 <body>
@@ -235,12 +235,12 @@
             </span>
 
             <span>
-                密码强度检查 <input id='crypt-password-check' type='checkbox' checked='true'
+                密码强度检查 <input id='crypt-password-check' type='checkbox' checked='checked'
                     onchange='get_password_check();' /><br />
             </span>
 
             <span>
-                显示密码 <input id='crypt-password-display' type='checkbox' checked='false' onchange='(() => {
+                显示密码 <input id='crypt-password-display' type='checkbox' checked='' onchange='(() => {
                     var self = document.getElementById("crypt-password-display");
                     var box = document.getElementById("crypt-password");
 
