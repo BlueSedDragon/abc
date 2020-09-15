@@ -463,7 +463,7 @@ async function hash_time(func) {
     if ((typeof func) !== 'function') throw (new Error('bad $func type.'));
 
     var count_total = 10;
-    var count_single = 10;
+    var count_single = 5;
 
     var data = random(1024);
     var delays = [];
@@ -556,12 +556,12 @@ async function auto_iters(time) { // millisecond
     if (time === 0) return 0;
 
     var iters_min = 1e6;
-    var single = 1000;
+    var single = 10000;
 
     var delay = await pbkdf2_time(single);
     delay /= single;
 
-    var iters = (time / delay);
+    var iters = ((time * 1.1) / (delay / 1.1));
     iters = Math.floor(iters + 1);
     if (iters < iters_min) iters = iters_min;
 
