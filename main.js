@@ -499,7 +499,7 @@ async function pbkdf2_time(iters) {
 }
 
 function pow_encode(n) {
-    if ((!Number.isSafeInteger(n)) || n < 0) throw (new Error('bad $n.'));
+    if ((!Number.isSafeInteger(n)) || n < 0 || n > 9e15) throw (new Error('bad $n.'));
 
     n = String(n);
 
@@ -517,36 +517,33 @@ function pow_encode(n) {
 
         exp = n.length - 1;
     } else {
-        let tmp = n.split('e');
-
-        let add = 0;
-        base = tmp[0];
-        if (base.indexOf('.') !== -1) {
-            base = base.split('.')[0];
-            add = 1;
-        }
-
-        base = Number(base);
-        base += add;
-
-        exp = tmp[1];
-        exp = exp.slice(1);
-        exp = Number(exp);
+        throw (new Error('bad $n.'));
     }
 
-    if (exp > 0xff) throw (new Error('$exp is cannot to encoding.'));
+    if (base > 0xf) throw (new Error('$base is cannot to encoding.'));
+    if (exp > 0xf) throw (new Error('$exp is cannot to encoding.'));
 
-    var bin = (new Uint8Array(2));
-    bin[0] = base;
-    bin[1] = exp;
+    var bin = (new Uint8Array(1));
+    {
+        let tmp = base.toString(16) + exp.toString(16);
+        tmp = parseInt(tmp, 16);
+        bin[0] = tmp;
+    }
 
     return bin;
 }
 function pow_decode(bin) {
-    if (bin.constructor !== Uint8Array) throw (new Error('bad $bin type.'));
+    if (bin.constructor !== Uint8Array || bin.length !== 1) throw (new Error('bad $bin.'));
 
-    var base = bin[0];
-    var exp = bin[1];
+    var base = null;
+    var exp = null;
+    {
+        let tmp = bin[0].toString(16);
+        if (tmp.length < 2) tmp = '0' + tmp;
+
+        base = parseInt(tmp[0], 16);
+        exp = parseInt(tmp[1], 16);
+    }
 
     //var n = base * (10 ** exp);
     var n = JSON.parse(`${base}e${exp}`);
