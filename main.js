@@ -869,7 +869,7 @@ async function aes256ctr_crypt(input, raw_key) {
 }
 async function iters_crypt(iters, iv) {
     if (iters.constructor !== Uint8Array) throw (new Error('bad $iters type.'));
-    if (iters.length !== 2) throw (new Error('bad $iters length.'));
+    if (iters.length !== 1) throw (new Error('bad $iters length.'));
 
     if (iv.constructor !== Uint8Array) throw (new Error('bad $iv type.'));
     if (iv.length !== iv_length) throw (new Error('bad $iv length.'));
@@ -900,15 +900,15 @@ async function aes256ctr_encrypt(plaintext, password, iv) {
 async function aes256ctr_decrypt(encrypted, password, iv) {
     if (encrypted.constructor !== Uint8Array) throw (new Error('bad $encrypted type.'));
 
-    var iters = encrypted.slice(0, 2);
-    if (iters.length !== 2) throw (new Error('bad $iters.'));
+    var iters = encrypted.slice(0, 1);
+    if (iters.length !== 1) throw (new Error('bad $iters.'));
 
     iters = await iters_crypt(iters, iv);
     iters = pow_decode(iters);
 
     var key = await aes256ctr_key(password, iv, iters);
 
-    var ciphertext = encrypted.slice(2);
+    var ciphertext = encrypted.slice(1);
     var output = await aes256ctr_crypt(ciphertext, key);
     if (output.length < 64) throw (new Error('bad $output.'));
 
@@ -1315,7 +1315,7 @@ async function _main(type) {
                     output = output.slice(iv_length);
 
                     {
-                        let iters = output.slice(0, 2);
+                        let iters = output.slice(0, 1);
                         iters = await iters_crypt(iters, iv);
                         iters = pow_decode(iters);
 
