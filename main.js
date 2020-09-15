@@ -911,7 +911,6 @@ async function aes256ctr_encrypt(plaintext, password, iv) {
     iters = await iters_crypt(iters, iv);
 
     var encrypted = buf_concat([iters, ciphertext]);
-
     return encrypted;
 }
 async function aes256ctr_decrypt(encrypted, password, iv) {

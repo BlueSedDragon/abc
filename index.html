@@ -302,7 +302,7 @@
             var i = undefined;
 
             var a = async (name) => {
-                var f = eval(name);
+                var f = window[name];
 
                 if(name === "pbkdf2" && i === undefined) {
                     i = await get_iters();
