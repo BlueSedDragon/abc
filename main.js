@@ -563,7 +563,7 @@ async function auto_iters(time) { // millisecond
 
     var iters = (time / delay);
     iters = Math.floor(iters + 1);
-    if (iters < iters_min) iters = iters_min + iters;
+    if (iters < iters_min) iters = iters_min;
 
     do {
         try {
