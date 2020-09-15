@@ -585,13 +585,30 @@ async function auto_iters(time) { // millisecond
     let time = 10 * 1000;
     let iters = null;
 
-    var get_iters = (async function () {
+    let get = (async function () {
         if (iters) return iters;
+        iters = -1;
 
         iters = await auto_iters(time);
         console.log(`PBKDF2 iterations: ${iters}, time: ~${time} millisecond.`);
 
         return (await get_iters());
+    });
+
+    var get_iters = (function () {
+        return (new Promise((resolve, reject) => {
+            var er = (() => {
+                get().then((iters) => {
+                    if (iters && iters !== -1) {
+                        resolve(iters);
+                        return;
+                    }
+
+                    setTimeout(er, 0);
+                });
+            });
+            setTimeout(er, 0);
+        }));
     });
 }
 
@@ -1418,6 +1435,7 @@ function test() {
 
         test();
 
+        get_iters();
         get_password_check();
         get_iv_length();
 
