@@ -729,7 +729,7 @@ function random(length) {
     return result;
 }
 
-function random_text(length) {
+function random_ascii(length) {
     if ((!Number.isSafeInteger(length)) || length < 0) throw (new Error('bad $length.'));
     if (length === 0) return '';
 
@@ -750,22 +750,81 @@ function random_text(length) {
     return result;
 }
 
+function random_text(length) {
+    if ((!Number.isSafeInteger(length)) || length < 0) throw (new Error('bad $length.'));
+    if (length === 0) return '';
+
+    var result = [];
+    for (let i = 0; i < length; ++i) {
+        let ii = null;
+        do {
+            ii = random_ascii(1);
+
+            let c = ii.charCodeAt(0);
+            if (c >= 0x30 && c <= 0x39) break;
+            if (c >= 0x41 && c <= 0x5a) break;
+            if (c >= 0x61 && c <= 0x7a) break;
+        } while (1);
+        result.push(ii);
+    }
+    result = result.join('');
+
+    return result;
+}
+
+function random_alphabet(length) {
+    if ((!Number.isSafeInteger(length)) || length < 0) throw (new Error('bad $length.'));
+    if (length === 0) return '';
+
+    var result = [];
+    for (let i = 0; i < length; ++i) {
+        let ii = null;
+        do {
+            ii = random_text(1);
+
+            let c = ii.charCodeAt(0);
+            if (c >= 0x41 && c <= 0x5a) break;
+            if (c >= 0x61 && c <= 0x7a) break;
+        } while (1);
+        result.push(ii);
+    }
+    result = result.join('');
+
+    return result;
+}
+
+function random_number(length) {
+    if ((!Number.isSafeInteger(length)) || length < 0) throw (new Error('bad $length.'));
+    if (length === 0) return '';
+
+    var result = [];
+    for (let i = 0; i < length; ++i) {
+        let ii = null;
+        do {
+            ii = random_text(1);
+
+            let c = ii.charCodeAt(0);
+            if (c >= 0x30 && c <= 0x39) break;
+        } while (1);
+        result.push(ii);
+    }
+    result = result.join('');
+
+    return result;
+}
+
 function random_password(length) {
     var result = null;
 
     var count = 1000;
     while (1) {
-        result = random_text(length);
+        result = [];
 
-        result = string_replaceAll(result, [
-            ' ',
-            '\'',
-            '"',
-            '`',
-            '%',
-            '/',
-            '\\'
-        ], '');
+        result.push('#');
+        result.push(random_text(length));
+        result.push('#');
+
+        result = result.join('');
 
         try {
             password_checker(result);
